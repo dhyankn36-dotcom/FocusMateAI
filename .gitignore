@@ -1,16 +1,44 @@
-# Python cache
+
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
 
-# Virtual environment
+# Virtual environments
 .venv/
 venv/
+env/
 
-# Secrets
+# Secrets and local configuration
 .env
 .env.*
+!.env.example
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Local database and runtime data
+focusmate.db
+focusmate.db-journal
+focusmate.db-wal
+focusmate.db-shm
 
 # Editor and operating system files
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Local backups — do not publish
+app_before_ui.py
+app_v04_backup.py
+
+
+# Local backups
+app_before_ui.py
+app_v04_backup.py
+
+# Local SQLite database
+focusmate.db
+focusmate.db-journal
+focusmate.db-wal
+focusmate.db-shm
