@@ -1,429 +1,577 @@
 
+import re
 import requests
 import streamlit as st
 
-# ==========================================
-# FOCUSMATE AI - ACCESSIBLE COGNITIVE CO-PILOT
-# ==========================================
+# =========================================================
+# FOCUSMATE AI
+# =========================================================
+
+OLLAMA_URL = "http://localhost:11434/api/chat"
+MODEL = "llama3.2"
 
 st.set_page_config(
     page_title="FocusMate AI",
-    page_icon="🧠",
+    page_icon="🎯",
     layout="centered",
-    initial_sidebar_state="expanded"
 )
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL_NAME = "llama3.2"
+st.title("🎯 FocusMate AI")
+st.caption("Your Personal Cognitive Co-Pilot")
+st.write(
+    "Turn overwhelming tasks into manageable actions, "
+    "simplify difficult text, and draft clear messages."
+)
 
-
-# ==========================================
-# AI FUNCTION
-# ==========================================
-
-def get_ai_response(
-    feature,
-    user_text,
-    response_length,
-    language_style,
-    one_step_mode,
-    completed_steps=None
-):
-    if completed_steps is None:
-        completed_steps = []
-
-    instructions = {
-        "Break down a task": (
-            "Help the user make progress on their task "
-            "with clear and practical actions."
-        ),
-        "Simplify text": (
-            "Rewrite the supplied text in easier language. "
-            "Preserve important facts and the original meaning."
-        ),
-        "Draft a message": (
-            "Write a clear, respectful message based on the "
-            "user's input. Do not invent facts or commitments."
-        )
-    }
-
-    length_instructions = {
-        "Short": "Be concise and use only essential information.",
-        "Balanced": "Give useful detail without unnecessary explanation.",
-        "Detailed": "Explain clearly with helpful details and examples."
-    }
-
-    if language_style == "Simple language":
-        language_instruction = (
-            "Use everyday words and short sentences. "
-            "Explain difficult terms simply."
-        )
-    else:
-        language_instruction = (
-            "Use natural, clear language suitable for the topic."
-        )
-
-    if one_step_mode and feature == "Break down a task":
-        completed_text = (
-            "\n".join(
-                f"- {step}" for step in completed_steps
-            )
-            if completed_steps
-            else "No steps completed yet."
-        )
-
-        pacing_instruction = f"""
-STRICT ONE-STEP MODE:
-
-You must return EXACTLY ONE next actionable step.
-
-Original task:
-{user_text}
-
-Steps already completed or previously shown:
-{completed_text}
-
-Rules:
-1. Return only ONE action the user should take next.
-2. Do not provide a full plan.
-3. Do not provide a numbered list or multiple actions.
-4. Do not repeat any completed or previously shown step.
-5. Keep the response to 1-3 short sentences.
-6. Start directly with the action.
-7. Choose a realistic next action that moves the task forward.
-8. Do not add an introduction, conclusion, or extra suggestions.
-
-Return only the next step.
-"""
-    elif one_step_mode:
-        pacing_instruction = (
-            "Keep the response compact and focused on one main idea. "
-            "Avoid multiple sections or unnecessary detail."
-        )
-    else:
-        pacing_instruction = (
-            "Provide a complete answer or full sequence of steps "
-            "when appropriate. Organize it clearly."
-        )
-
-    prompt = f"""
-Feature: {feature}
-
-Task instructions:
-{instructions[feature]}
-
-Response length:
-{length_instructions[response_length]}
-
-Language preference:
-{language_instruction}
-
-Pacing:
-{pacing_instruction}
-
-User input:
-{user_text}
-"""
-
-    response = requests.post(
-        OLLAMA_URL,
-        json={
-            "model": MODEL_NAME,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are FocusMate AI, a supportive cognitive "
-                        "co-pilot. Help users organize tasks, understand "
-                        "information, and communicate clearly. "
-                        "Respect individual preferences. Never diagnose "
-                        "users or assume their abilities or needs. "
-                        "Be patient, practical, respectful, and "
-                        "non-judgmental. Keep the user in control. "
-                        "Follow the user's requested output format exactly."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "stream": False,
-            "options": {
-                "temperature": 0.2
-            }
-        },
-        timeout=180
-    )
-
-    response.raise_for_status()
-    return response.json()["message"]["content"].strip()
-
-
-# ==========================================
+# =========================================================
 # SESSION STATE
-# ==========================================
+# =========================================================
 
-defaults = {
-    "last_response": None,
-    "last_input": None,
-    "last_feature": None,
-    "last_settings": None,
+DEFAULTS = {
+    "task_steps": [],
+    "current_step": 0,
     "completed_steps": [],
+    "active_task": "",
     "task_finished": False,
-    "last_error": None
+    "last_response": "",
 }
 
-for key, value in defaults.items():
+for key, value in DEFAULTS.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
 
-# ==========================================
-# HEADER
-# ==========================================
+# =========================================================
+# PERSONALIZATION
+# =========================================================
 
-st.title("🧠 FocusMate AI")
-st.subheader("Your Personal Cognitive Co-Pilot")
-
-st.write(
-    "Make tasks, information, and communication easier "
-    "to manage — in the way that works for you."
-)
-
-st.info(
-    "You choose how FocusMate AI responds. These settings are "
-    "preferences, not assessments or diagnoses."
-)
-
-
-# ==========================================
-# PERSONALIZATION SETTINGS
-# ==========================================
-
-with st.expander("⚙️ Personalize your experience", expanded=True):
+with st.sidebar:
+    st.header("⚙️ Personalization")
 
     response_length = st.selectbox(
-        "How much detail would you like?",
+        "Response length",
         ["Short", "Balanced", "Detailed"],
-        index=1
+        index=1,
     )
 
-    language_style = st.radio(
-        "Which language style do you prefer?",
-        ["Simple language", "Standard language"],
-        index=0
+    language_style = st.selectbox(
+        "Language style",
+        ["Simple", "Standard"],
+        index=0,
     )
 
-    one_step_mode = st.checkbox(
+    one_step_mode = st.toggle(
         "One step at a time",
-        value=False,
-        help=(
-            "For task breakdown, receive one next action at a time "
-            "and continue when you're ready."
-        )
+        value=True,
+    )
+
+    st.divider()
+    st.caption("AI runs locally through Ollama.")
+    st.caption(f"Model: {MODEL}")
+
+
+# =========================================================
+# AI HELPER FUNCTIONS
+# =========================================================
+
+def build_system_prompt():
+    length_instructions = {
+        "Short": "Keep answers concise.",
+        "Balanced": "Give clear, useful explanations.",
+        "Detailed": "Explain thoroughly with practical examples.",
+    }
+
+    style_instructions = {
+        "Simple": "Use beginner-friendly language and explain jargon.",
+        "Standard": "Use clear, professional language.",
+    }
+
+    return (
+        "You are FocusMate AI, a practical productivity assistant. "
+        "Be clear, supportive, and accurate. Do not invent facts. "
+        "Do not claim a task is complete unless the user confirms it. "
+        f"{length_instructions[response_length]} "
+        f"{style_instructions[language_style]}"
     )
 
 
-# ==========================================
-# FEATURE SELECTION
-# ==========================================
+def ask_ollama(prompt, system_prompt):
+    payload = {
+        "model": MODEL,
+        "stream": False,
+        "messages": [
+            {
+                "role": "system",
+                "content": system_prompt,
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+    }
 
-feature = st.selectbox(
+    response = requests.post(
+        OLLAMA_URL,
+        json=payload,
+        timeout=120,
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+    return data["message"]["content"].strip()
+
+
+def extract_action_steps(result):
+    """Extract actionable steps and ignore headings and introductions."""
+
+    steps = []
+
+    ignored_phrases = {
+        "here's your first action",
+        "here is your first action",
+        "here are your steps",
+        "here are the steps",
+        "here is your action plan",
+        "here's your action plan",
+        "your action plan",
+        "action plan",
+        "steps",
+    }
+
+    for line in result.splitlines():
+        cleaned = line.strip()
+
+        if not cleaned:
+            continue
+
+        # Remove Markdown formatting and numbered-list prefixes.
+        cleaned = re.sub(r"^\s*#{1,6}\s*", "", cleaned)
+        cleaned = re.sub(
+            r"^\s*(?:[-*•]\s*|\d+[\.\)]\s*)",
+            "",
+            cleaned,
+        ).strip()
+
+        if not cleaned:
+            continue
+
+        normalized = cleaned.lower().strip(" :.-")
+
+        # Ignore known introductory headings.
+        if normalized in ignored_phrases:
+            continue
+
+        # Ignore short heading-like introductions ending in a colon.
+        if cleaned.endswith(":") and len(cleaned.split()) <= 10:
+            continue
+
+        # Ignore generic introductions that are not actions.
+        if normalized.startswith(
+            (
+                "here's your first action",
+                "here is your first action",
+                "here are your steps",
+                "here is your action plan",
+                "let's break this down",
+            )
+        ):
+            continue
+
+        steps.append(cleaned)
+
+    return steps
+
+
+def reset_task():
+    st.session_state.task_steps = []
+    st.session_state.current_step = 0
+    st.session_state.completed_steps = []
+    st.session_state.active_task = ""
+    st.session_state.task_finished = False
+
+
+def handle_ollama_error(error):
+    if isinstance(error, requests.exceptions.ConnectionError):
+        st.error(
+            "Cannot connect to Ollama. Make sure Ollama is running. "
+            "You can start it with `ollama run llama3.2`."
+        )
+    elif isinstance(error, requests.exceptions.Timeout):
+        st.error(
+            "Ollama took too long to respond. Please try again."
+        )
+    elif isinstance(error, requests.exceptions.HTTPError):
+        st.error(
+            f"Ollama returned an HTTP error: {error}"
+        )
+    elif isinstance(error, (ValueError, KeyError, TypeError)):
+        st.error(
+            "The response from Ollama was unexpected. Please try again."
+        )
+    else:
+        st.error(f"Something went wrong: {error}")
+
+
+# =========================================================
+# MAIN FEATURE SELECTOR
+# =========================================================
+
+feature = st.radio(
     "What would you like help with?",
     [
         "Break down a task",
         "Simplify text",
-        "Draft a message"
-    ]
-)
-
-descriptions = {
-    "Break down a task":
-        "Turn a large task into smaller, manageable actions.",
-    "Simplify text":
-        "Make difficult information easier to understand.",
-    "Draft a message":
-        "Create a message that you can review and edit."
-}
-
-st.caption(descriptions[feature])
-
-
-# ==========================================
-# USER INPUT
-# ==========================================
-
-user_text = st.text_area(
-    "Enter your task, text, or message",
-    placeholder=(
-        "Example: I need to prepare a database assignment "
-        "by tomorrow..."
-    ),
-    height=180
+        "Draft a message",
+    ],
+    horizontal=False,
 )
 
 
-# ==========================================
-# GENERATE RESPONSE
-# ==========================================
+# =========================================================
+# FEATURE 1: BREAK DOWN A TASK
+# =========================================================
 
-if st.button("✨ Help me get started", type="primary"):
+if feature == "Break down a task":
+    st.subheader("🧩 Break down your task")
 
-    if not user_text.strip():
-        st.warning("Please enter some text first.")
+    task = st.text_area(
+        "What do you need to accomplish?",
+        placeholder="Example: Prepare for my DAA exam.",
+        height=110,
+        key="task_input",
+    )
 
-    else:
-        try:
-            with st.spinner("FocusMate AI is preparing your response..."):
-
-                result = get_ai_response(
-                    feature=feature,
-                    user_text=user_text.strip(),
-                    response_length=response_length,
-                    language_style=language_style,
-                    one_step_mode=one_step_mode,
-                    completed_steps=[]
-                )
-
-            st.session_state.last_response = result
-            st.session_state.last_input = user_text.strip()
-            st.session_state.last_feature = feature
-
-            st.session_state.last_settings = {
-                "response_length": response_length,
-                "language_style": language_style,
-                "one_step_mode": one_step_mode
-            }
-
-            st.session_state.completed_steps = []
-            st.session_state.task_finished = False
-            st.session_state.last_error = None
-
-            # Remember the first displayed action in one-step mode.
-            if one_step_mode and feature == "Break down a task":
-                st.session_state.completed_steps = [result]
-
-        except requests.exceptions.ConnectionError:
-            st.error(
-                "Cannot connect to Ollama. Make sure Ollama is "
-                "running on your computer."
-            )
-
-        except requests.exceptions.Timeout:
-            st.error(
-                "The AI took too long to respond. Please try again."
-            )
-
-        except requests.exceptions.RequestException as error:
-            st.error(f"Could not generate a response: {error}")
-
-        except (KeyError, ValueError):
-            st.error(
-                "The AI returned an unexpected response. "
-                "Please try again."
-            )
-
-
-# ==========================================
-# DISPLAY RESPONSE
-# ==========================================
-
-if st.session_state.last_response:
-
-    st.divider()
-    st.subheader("Your personalized assistance")
-
-    if (
-        st.session_state.last_settings
-        and st.session_state.last_settings["one_step_mode"]
-        and st.session_state.last_feature == "Break down a task"
+    if st.button(
+        "Create my action plan",
+        type="primary",
     ):
-        step_number = len(st.session_state.completed_steps)
+        if not task.strip():
+            st.warning("Please enter a task first.")
 
-        st.caption(f"Step {step_number}")
+        else:
+            system_prompt = build_system_prompt() + (
+                "\nYou are creating an actionable task plan. "
+                "Return only a numbered list of 5 to 8 concrete steps. "
+                "Each numbered line must contain one specific action. "
+                "Do not include an introduction, heading, conclusion, "
+                "or commentary. Start directly with step 1. "
+                "Avoid vague actions. Make the steps achievable "
+                "and relevant to the user's task."
+            )
 
-        st.markdown(st.session_state.last_response)
+            prompt = (
+                "Create a practical action plan for this task:\n"
+                f"{task.strip()}\n\n"
+                "Return 5 to 8 numbered actions. "
+                "Each action should begin on a new line."
+            )
 
-        st.caption(
-            "Move at your own pace. You can continue when you're ready."
-        )
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            if st.button(
-                "➡️ Next step",
-                type="primary",
-                disabled=st.session_state.task_finished
-            ):
+            with st.spinner("Creating your action plan..."):
                 try:
-                    settings = st.session_state.last_settings
-
-                    with st.spinner("Preparing your next step..."):
-                        next_response = get_ai_response(
-                            feature=st.session_state.last_feature,
-                            user_text=st.session_state.last_input,
-                            response_length=settings["response_length"],
-                            language_style=settings["language_style"],
-                            one_step_mode=True,
-                            completed_steps=st.session_state.completed_steps
-                        )
-
-                    st.session_state.last_response = next_response
-                    st.session_state.completed_steps.append(next_response)
-                    st.session_state.last_error = None
-                    st.rerun()
-
-                except requests.exceptions.RequestException:
-                    st.error(
-                        "Could not generate the next step. "
-                        "Check that Ollama is running and try again."
+                    result = ask_ollama(
+                        prompt,
+                        system_prompt,
                     )
 
-            if st.button("✅ I'm finished"):
-                st.session_state.task_finished = True
-                st.rerun()
+                    steps = extract_action_steps(result)
 
-        with col2:
-            if st.button("🔄 Start task again"):
-                st.session_state.last_response = None
-                st.session_state.last_input = None
-                st.session_state.last_feature = None
-                st.session_state.last_settings = None
-                st.session_state.completed_steps = []
-                st.session_state.task_finished = False
-                st.rerun()
+                    if not steps:
+                        st.error(
+                            "The AI didn't return clear action steps. "
+                            "Please try again."
+                        )
 
-        if st.session_state.task_finished:
-            st.success("Well done! You've marked this task as finished.")
+                    else:
+                        st.session_state.task_steps = steps
+                        st.session_state.current_step = 0
+                        st.session_state.completed_steps = []
+                        st.session_state.active_task = task.strip()
+                        st.session_state.task_finished = False
+                        st.session_state.last_response = result
 
-    else:
-        st.markdown(st.session_state.last_response)
+                except (
+                    requests.exceptions.RequestException,
+                    ValueError,
+                    KeyError,
+                    TypeError,
+                ) as error:
+                    handle_ollama_error(error)
 
-        st.caption(
-            "Review the response and adjust it to suit your needs."
+    # Display the generated action plan.
+    if st.session_state.task_steps:
+        st.divider()
+        st.subheader("📍 Your action plan")
+
+        st.write(
+            f"**Task:** {st.session_state.active_task}"
         )
 
+        steps = st.session_state.task_steps
+        completed = st.session_state.completed_steps
+
+        total = len(steps)
+        done_count = len(completed)
+
+        progress = done_count / total if total else 0
+
+        st.progress(progress)
+        st.caption(
+            f"{done_count} of {total} actions marked complete"
+        )
+
+        if st.session_state.task_finished:
+            st.success(
+                "🎉 You've marked this task as finished!"
+            )
+
+        elif one_step_mode:
+            current = st.session_state.current_step
+
+            if current < total:
+                st.markdown(
+                    f"### Action {current + 1} of {total}"
+                )
+
+                st.info(steps[current])
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    if st.button(
+                        "✅ Mark complete",
+                        disabled=current in completed,
+                        use_container_width=True,
+                    ):
+                        if current not in completed:
+                            completed.append(current)
+
+                        st.session_state.completed_steps = completed
+                        st.rerun()
+
+                with col2:
+                    if st.button(
+                        "➡️ Next action",
+                        disabled=current >= total - 1,
+                        use_container_width=True,
+                    ):
+                        st.session_state.current_step = current + 1
+                        st.rerun()
+
+                if current == total - 1:
+                    if st.button(
+                        "🏁 Finish task",
+                        type="primary",
+                        use_container_width=True,
+                    ):
+                        if current not in completed:
+                            completed.append(current)
+
+                        st.session_state.completed_steps = completed
+                        st.session_state.task_finished = True
+                        st.rerun()
+
+            else:
+                st.success("You've reached the end of the action plan.")
+
+                if st.button(
+                    "🏁 Finish task",
+                    type="primary",
+                ):
+                    st.session_state.task_finished = True
+                    st.rerun()
+
+        else:
+            # Use unique keys for checkboxes so Streamlit
+            # can preserve their state across reruns.
+            for index, step in enumerate(steps):
+                is_done = index in completed
+
+                checked = st.checkbox(
+                    step,
+                    value=is_done,
+                    key=f"task_step_{index}",
+                )
+
+                if checked and not is_done:
+                    completed.append(index)
+
+                elif not checked and is_done:
+                    completed.remove(index)
+
+            st.session_state.completed_steps = completed
+
+            if st.button(
+                "🏁 Mark task finished",
+                type="primary",
+            ):
+                if len(completed) == total:
+                    st.session_state.task_finished = True
+                    st.rerun()
+                else:
+                    st.warning(
+                        "Complete all actions before marking "
+                        "the task finished."
+                    )
+
+        with st.expander("View the full action plan"):
+            for index, step in enumerate(steps):
+                marker = (
+                    "✅"
+                    if index in completed
+                    else "⬜"
+                )
+
+                st.write(
+                    f"{marker} {index + 1}. {step}"
+                )
+
+        if st.button("🔄 Start a new task"):
+            reset_task()
+            st.rerun()
+
+
+# =========================================================
+# FEATURE 2: SIMPLIFY TEXT
+# =========================================================
+
+elif feature == "Simplify text":
+    st.subheader("📖 Simplify difficult text")
+
+    text_to_simplify = st.text_area(
+        "Paste the text you want explained",
+        placeholder="Paste a paragraph, concept, or notes here...",
+        height=180,
+    )
+
+    if st.button(
+        "Simplify text",
+        type="primary",
+    ):
+        if not text_to_simplify.strip():
+            st.warning("Please paste some text first.")
+
+        else:
+            prompt = (
+                "Explain the following text in easier language. "
+                "Preserve its important meaning, define difficult "
+                "terms, and include an example where useful.\n\n"
+                f"{text_to_simplify.strip()}"
+            )
+
+            with st.spinner("Simplifying the text..."):
+                try:
+                    result = ask_ollama(
+                        prompt,
+                        build_system_prompt(),
+                    )
+
+                    st.session_state.last_response = result
+
+                    st.markdown("### Simplified explanation")
+                    st.write(result)
+
+                except (
+                    requests.exceptions.RequestException,
+                    ValueError,
+                    KeyError,
+                    TypeError,
+                ) as error:
+                    handle_ollama_error(error)
+
+
+# =========================================================
+# FEATURE 3: DRAFT A MESSAGE
+# =========================================================
+
+elif feature == "Draft a message":
+    st.subheader("✍️ Draft a message")
+
+    recipient = st.text_input(
+        "Who is the message for?",
+        placeholder="Example: My professor",
+    )
+
+    purpose = st.text_area(
+        "What do you want to communicate?",
+        placeholder="Explain your purpose and important details...",
+        height=120,
+    )
+
+    tone = st.selectbox(
+        "Tone",
+        [
+            "Friendly",
+            "Professional",
+            "Polite",
+            "Casual",
+        ],
+    )
+
+    if st.button(
+        "Draft my message",
+        type="primary",
+    ):
+        if not purpose.strip():
+            st.warning(
+                "Please describe what you want to communicate."
+            )
+
+        else:
+            prompt = (
+                f"Draft a {tone.lower()} message for "
+                f"{recipient.strip() or 'the recipient'}. "
+                "Use the user's intent and details without "
+                "inventing facts. Return a complete draft that "
+                "the user can review and edit.\n\n"
+                f"Purpose and details: {purpose.strip()}"
+            )
+
+            with st.spinner("Drafting your message..."):
+                try:
+                    result = ask_ollama(
+                        prompt,
+                        build_system_prompt(),
+                    )
+
+                    st.session_state.last_response = result
+
+                    st.markdown("### Your message draft")
+                    st.write(result)
+
+                except (
+                    requests.exceptions.RequestException,
+                    ValueError,
+                    KeyError,
+                    TypeError,
+                ) as error:
+                    handle_ollama_error(error)
+
+
+# =========================================================
+# DOWNLOAD LAST RESPONSE
+# =========================================================
+
+if st.session_state.last_response:
+    st.divider()
+
     st.download_button(
-        label="⬇️ Download response as text",
+        "⬇️ Download last response",
         data=st.session_state.last_response,
         file_name="focusmate_response.txt",
-        mime="text/plain"
+        mime="text/plain",
     )
 
 
-# ==========================================
+# =========================================================
 # FOOTER
-# ==========================================
+# =========================================================
 
 st.divider()
 
 st.caption(
-    "FocusMate AI | Version 0.4 | Local AI with user-controlled settings"
-)
-
-st.caption(
-    "An assistive tool for learning, task management, "
-    "and communication. Not a diagnostic tool."
+    "FocusMate AI uses your local Ollama server. "
+    "AI-generated suggestions can be incorrect, so review "
+    "them before relying on them."
 )
