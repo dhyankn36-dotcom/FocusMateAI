@@ -20,8 +20,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL_NAME = "llama3.2"
+GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 DB_PATH = Path(__file__).resolve().parent / "focusmate.db"
 
 
@@ -397,50 +397,62 @@ def build_preferences():
 
 
 def ask_ollama(prompt, system_prompt=None):
+    """Generate a response with Gemini for the hosted Streamlit app."""
     system_prompt = system_prompt or (
         "You are FocusMate AI, a practical and supportive productivity "
         "assistant. Be accurate, organized, and actionable."
     )
 
+    try:
+        api_key = st.secrets.get("GEMINI_API_KEY", "")
+    except Exception:
+        api_key = ""
+
+    if not api_key:
+        return None, (
+            "Gemini API key is missing. Add GEMINI_API_KEY in your "
+            "Streamlit app Settings → Secrets, then reboot the app."
+        )
+
     payload = {
-        "model": MODEL_NAME,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt},
-        ],
-        "stream": False,
-        "options": {"temperature": 0.4},
+        "systemInstruction": {"parts": [{"text": system_prompt}]},
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.4},
     }
 
     try:
         response = requests.post(
-            OLLAMA_URL,
+            GEMINI_URL,
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
             json=payload,
-            timeout=(10, 180),
+            timeout=(10, 120),
         )
-
         if response.status_code != 200:
+            try:
+                details = response.json().get("error", {}).get("message", "")
+            except ValueError:
+                details = ""
             return None, (
-                f"Ollama returned HTTP {response.status_code}. "
-                "Check that Ollama is running and the model is available."
+                f"Gemini API returned HTTP {response.status_code}. "
+                + (details or "Check your API key, model access, and quota.")
             )
 
-        answer = response.json().get("message", {}).get("content", "").strip()
-
+        data = response.json()
+        candidates = data.get("candidates", [])
+        answer = "".join(
+            part.get("text", "")
+            for part in (candidates[0].get("content", {}).get("parts", []) if candidates else [])
+            if isinstance(part, dict)
+        ).strip()
         if not answer:
-            return None, "Ollama returned an empty response. Try again."
-
+            return None, "Gemini returned an empty response. Please try again."
         return answer, None
-
-    except requests.exceptions.ConnectionError:
-        return None, (
-            "Cannot connect to Ollama. Check that Ollama is running "
-            "and that llama3.2 is installed."
-        )
     except requests.exceptions.Timeout:
-        return None, "Ollama took too long to respond. Try a shorter prompt."
-    except (requests.exceptions.RequestException, ValueError) as exc:
-        return None, f"Error contacting Ollama: {exc}"
+        return None, "Gemini took too long to respond. Please try again."
+    except requests.exceptions.RequestException:
+        return None, "Could not reach Gemini. Check the app's internet connection and try again."
+    except (ValueError, KeyError, IndexError) as exc:
+        return None, f"Could not read Gemini's response: {exc}"
 
 
 def extract_action_steps(text):
@@ -1073,6 +1085,6 @@ if (
 
 st.divider()
 st.caption(
-    "FocusMate AI · Local AI productivity workspace · "
+    "FocusMate AI · AI productivity workspace · "
     "Review important AI-generated information before relying on it."
 )
