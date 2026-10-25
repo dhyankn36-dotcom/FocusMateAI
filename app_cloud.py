@@ -590,7 +590,7 @@ with st.sidebar:
     st.divider()
     st.markdown("#### 🧠 Local AI")
 
-    st.caption(f"Model: `{MODEL_NAME}`")
+    st.caption(f"Model: `{GEMINI_MODEL}`")
     if st.button("Check Ollama connection", use_container_width=True):
         with st.spinner("Checking local AI..."):
             _, error = ask_ollama(
