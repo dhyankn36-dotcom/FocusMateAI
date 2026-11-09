@@ -36,6 +36,7 @@ from focusmate_core import (
     open_database,
     paginate_records,
     response_filename,
+    rename_response_record,
     restart_task_record,
     rename_task_record,
     sort_response_records,
@@ -2113,6 +2114,26 @@ elif st.session_state.page == "History":
                 f"{response['title']} · {response['created_at']}"
 
             ):
+                with st.form(key=f"rename_response_form_{response['id']}"):
+                    new_title = st.text_input(
+                        "Response title",
+                        value=response["title"],
+                        key=f"rename_response_title_{response['id']}",
+                    )
+                    rename_submitted = st.form_submit_button("Save title")
+                if rename_submitted:
+                    new_title = new_title.strip()
+                    if not new_title:
+                        st.error("Response title cannot be empty.")
+                    else:
+                        with get_db() as db:
+                            renamed = rename_response_record(
+                                db, response["id"], new_title
+                            )
+                        if not renamed:
+                            st.error("This saved response no longer exists.")
+                        else:
+                            st.rerun()
 
                 st.markdown(response["content"])
 

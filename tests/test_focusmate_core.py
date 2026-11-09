@@ -24,6 +24,7 @@ from focusmate_core import (
     load_response_page,
     paginate_records,
     response_filename,
+    rename_response_record,
     rename_task_record,
     restart_task_record,
     sort_response_records,
@@ -557,6 +558,31 @@ class HistoryImportTests(unittest.TestCase):
                 ).fetchone()
 
             self.assertEqual(task["title"], "Weekly review")
+
+    def test_rename_response_record_updates_title_and_reports_missing_response(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                cursor = db.execute(
+                    """INSERT INTO responses (title, content, created_at)
+                       VALUES (?, ?, ?)""",
+                    ("Draft", "Response text", "2026-11-09T10:00:00"),
+                )
+                response_id = cursor.lastrowid
+
+            with open_database(database_path) as db:
+                self.assertEqual(
+                    rename_response_record(db, response_id, "Final draft"), 1
+                )
+                self.assertEqual(
+                    rename_response_record(db, 999, "Missing"), 0
+                )
+                response = db.execute(
+                    "SELECT title FROM responses WHERE id = ?", (response_id,)
+                ).fetchone()
+
+            self.assertEqual(response["title"], "Final draft")
 
     def test_restart_task_record_clears_progress_and_finished_state(self):
         with tempfile.TemporaryDirectory() as temp_dir:
