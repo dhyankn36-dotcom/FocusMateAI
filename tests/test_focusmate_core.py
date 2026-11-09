@@ -12,6 +12,7 @@ from focusmate_core import (
     json_dump,
     json_load,
     open_database,
+    import_history_json,
     task_stats,
     undo_last_completed_action,
 )
@@ -180,6 +181,131 @@ class JsonHelpersTests(unittest.TestCase):
                     db.execute("SELECT title FROM responses").fetchall()[0]["title"],
                     "Keep",
                 )
+
+
+class HistoryImportTests(unittest.TestCase):
+    def create_database(self, database_path):
+        with open_database(database_path) as db:
+            db.execute("""
+                CREATE TABLE tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    actions TEXT NOT NULL,
+                    completed TEXT NOT NULL,
+                    finished INTEGER NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+            """)
+            db.execute("""
+                CREATE TABLE responses (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+            """)
+
+    def test_imports_exported_records_without_reusing_record_ids(self):
+        export = build_history_export(
+            [
+                {
+                    "id": 40,
+                    "title": "Plan",
+                    "actions": '["Research", "Write"]',
+                    "completed": "[0]",
+                    "finished": False,
+                    "created_at": "2026-11-09T10:00:00",
+                }
+            ],
+            [
+                {
+                    "id": 50,
+                    "title": "Notes",
+                    "content": "Saved response",
+                    "created_at": "2026-11-09T10:05:00",
+                }
+            ],
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                self.assertEqual(import_history_json(db, export), (1, 1))
+                self.assertEqual(import_history_json(db, export), (0, 0))
+                tasks = db.execute(
+                    "SELECT id, title, actions, completed FROM tasks ORDER BY id"
+                ).fetchall()
+                responses = db.execute(
+                    "SELECT id, title, content FROM responses ORDER BY id"
+                ).fetchall()
+
+            self.assertEqual([task["id"] for task in tasks], [1])
+            self.assertEqual(tasks[0]["completed"], "[0]")
+            self.assertEqual([response["id"] for response in responses], [1])
+
+    def test_rejects_malformed_history_before_inserting_any_records(self):
+        payload = {
+            "format_version": 1,
+            "tasks": [
+                {
+                    "title": "Valid task",
+                    "actions": ["Action"],
+                    "completed": [0],
+                    "finished": False,
+                    "created_at": "2026-11-09T10:00:00",
+                }
+            ],
+            "responses": [{"title": "Invalid response"}],
+        }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with self.assertRaisesRegex(ValueError, "invalid response"):
+                with open_database(database_path) as db:
+                    import_history_json(db, json_dump(payload))
+
+            with open_database(database_path) as db:
+                self.assertEqual(
+                    db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0],
+                    0,
+                )
+
+    def test_rejects_unsupported_versions_and_invalid_step_indexes(self):
+        payload = {
+            "format_version": 1,
+            "tasks": [
+                {
+                    "title": "Plan",
+                    "actions": ["Action"],
+                    "completed": [1],
+                    "finished": False,
+                    "created_at": "2026-11-09T10:00:00",
+                }
+            ],
+            "responses": [],
+        }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                with self.assertRaisesRegex(ValueError, "invalid task"):
+                    import_history_json(db, json_dump(payload))
+                payload["format_version"] = True
+                with self.assertRaisesRegex(ValueError, "Unsupported"):
+                    import_history_json(db, json_dump(payload))
+
+    def test_rejects_oversized_and_non_utf8_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                with self.assertRaisesRegex(ValueError, "5 MB"):
+                    import_history_json(db, b" " * (5_000_001))
+                with self.assertRaisesRegex(ValueError, "UTF-8"):
+                    import_history_json(db, b"\xff")
 
 
 class ActionStepTests(unittest.TestCase):

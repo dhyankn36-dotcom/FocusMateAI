@@ -19,7 +19,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **Flexible Progress:** Undo the last completed step while using one-step mode.
 - **Task History and Persistence:** Save tasks and responses locally using SQLite.
 - **Searchable History:** Find saved tasks and AI responses by title, step, or content.
-- **History Export:** Download saved tasks and AI responses as a JSON file.
+- **History Backup:** Export saved tasks and AI responses to JSON and import backups up to 5 MB.
 - **History Management:** Delete individual saved tasks and AI responses.
 - **Downloadable Responses:** Download AI-generated responses as text files.
 - **Local AI:** Run language generation locally through Ollama and Llama 3.2.
@@ -126,7 +126,6 @@ AI-generated responses may contain errors or omissions. Review the output before
 ## 🗺️ Future Improvements
 
 Potential improvements include:
-- Importing a previously exported history file
 - Using a persistent database for hosted deployments
 - Additional personalization and accessibility options
 

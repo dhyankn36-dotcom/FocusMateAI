@@ -7,6 +7,7 @@ MAX_TASK_INPUT_CHARS = 2_000
 MAX_SIMPLIFY_INPUT_CHARS = 10_000
 MAX_RECIPIENT_CHARS = 120
 MAX_MESSAGE_PURPOSE_CHARS = 3_000
+MAX_HISTORY_IMPORT_BYTES = 5_000_000
 
 
 def json_dump(value):
@@ -84,6 +85,118 @@ def build_history_export(tasks, responses):
         ensure_ascii=False,
         indent=2,
     )
+
+
+def import_history_json(connection, content):
+    if isinstance(content, bytes):
+        if len(content) > MAX_HISTORY_IMPORT_BYTES:
+            raise ValueError("The history file exceeds the 5 MB import limit.")
+        try:
+            content = content.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError("The history file must be UTF-8 encoded JSON.") from exc
+    elif isinstance(content, str):
+        if len(content.encode("utf-8")) > MAX_HISTORY_IMPORT_BYTES:
+            raise ValueError("The history file exceeds the 5 MB import limit.")
+    else:
+        raise ValueError("The history file must contain JSON text.")
+
+    try:
+        payload = json.loads(content)
+    except (json.JSONDecodeError, RecursionError) as exc:
+        raise ValueError("The history file is not valid JSON.") from exc
+
+    if (
+        not isinstance(payload, dict)
+        or type(payload.get("format_version")) is not int
+        or payload["format_version"] != 1
+    ):
+        raise ValueError("Unsupported history file format.")
+
+    tasks = payload.get("tasks")
+    responses = payload.get("responses")
+    if not isinstance(tasks, list) or not isinstance(responses, list):
+        raise ValueError("History file must contain task and response lists.")
+
+    valid_tasks = []
+    for task in tasks:
+        if not isinstance(task, dict):
+            raise ValueError("History contains an invalid task record.")
+
+        title = task.get("title")
+        actions = task.get("actions")
+        completed = task.get("completed")
+        created_at = task.get("created_at")
+        finished = task.get("finished")
+        if (
+            not isinstance(title, str)
+            or not title.strip()
+            or not isinstance(actions, list)
+            or any(not isinstance(action, str) for action in actions)
+            or not isinstance(completed, list)
+            or any(
+                not isinstance(index, int)
+                or isinstance(index, bool)
+                or index < 0
+                or index >= len(actions)
+                for index in completed
+            )
+            or not isinstance(finished, bool)
+            or not isinstance(created_at, str)
+        ):
+            raise ValueError("History contains an invalid task record.")
+
+        valid_tasks.append(
+            (title, json_dump(actions), json_dump(sorted(set(completed))),
+             int(finished), created_at)
+        )
+
+    valid_responses = []
+    for response in responses:
+        if not isinstance(response, dict):
+            raise ValueError("History contains an invalid response record.")
+
+        title = response.get("title")
+        response_content = response.get("content")
+        created_at = response.get("created_at")
+        if (
+            not isinstance(title, str)
+            or not title.strip()
+            or not isinstance(response_content, str)
+            or not isinstance(created_at, str)
+        ):
+            raise ValueError("History contains an invalid response record.")
+
+        valid_responses.append((title, response_content, created_at))
+
+    imported_tasks = 0
+    for task in valid_tasks:
+        cursor = connection.execute(
+            """INSERT INTO tasks (title, actions, completed, finished, created_at)
+               SELECT ?, ?, ?, ?, ?
+               WHERE NOT EXISTS (
+                   SELECT 1 FROM tasks
+                   WHERE title = ? AND actions = ? AND completed = ?
+                     AND finished = ? AND created_at = ?
+               )""",
+            task + task,
+        )
+        imported_tasks += cursor.rowcount
+
+    imported_responses = 0
+    for response in valid_responses:
+        cursor = connection.execute(
+            """INSERT INTO responses (title, content, created_at)
+               SELECT ?, ?, ?
+               WHERE NOT EXISTS (
+                   SELECT 1 FROM responses
+                   WHERE title = ? AND content = ? AND created_at = ?
+               )""",
+            response + response,
+        )
+        imported_responses += cursor.rowcount
+
+    return imported_tasks, imported_responses
 
 
 def filter_history(records, query, fields):

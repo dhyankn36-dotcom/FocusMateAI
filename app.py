@@ -10,6 +10,7 @@ import requests
 
 import streamlit as st
 from focusmate_core import (
+    MAX_HISTORY_IMPORT_BYTES,
     MAX_MESSAGE_PURPOSE_CHARS,
     MAX_RECIPIENT_CHARS,
     MAX_SIMPLIFY_INPUT_CHARS,
@@ -20,6 +21,7 @@ from focusmate_core import (
     extract_action_steps,
     extract_ollama_content,
     filter_history,
+    import_history_json,
     json_dump,
     json_load,
     open_database,
@@ -1586,6 +1588,32 @@ elif st.session_state.page == "History":
     st.markdown("## 🕘 History")
 
     st.caption("Review tasks and AI responses saved on this computer.")
+
+    uploaded_history = st.file_uploader(
+        "Import a history backup (.json)",
+        type=["json"],
+        max_upload_size=MAX_HISTORY_IMPORT_BYTES // 1_000_000,
+        key="history_import",
+    )
+    st.caption("Identical records already in your history are skipped.")
+    if st.button(
+        "Import history backup",
+        disabled=uploaded_history is None,
+        use_container_width=True,
+    ):
+        try:
+            with get_db() as db:
+                imported_tasks, imported_responses = import_history_json(
+                    db, uploaded_history.getvalue()
+                )
+        except ValueError as exc:
+            st.error(str(exc))
+        else:
+            st.success(
+                f"Imported {imported_tasks} tasks and "
+                f"{imported_responses} AI responses."
+            )
+            st.rerun()
 
     history_query = st.text_input(
         "Search saved tasks and AI responses",
