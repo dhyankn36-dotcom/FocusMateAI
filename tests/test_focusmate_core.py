@@ -24,6 +24,7 @@ from focusmate_core import (
     load_response_page,
     paginate_records,
     response_filename,
+    rename_task_record,
     restart_task_record,
     sort_response_records,
     sort_task_records,
@@ -526,6 +527,36 @@ class HistoryImportTests(unittest.TestCase):
                     created_at TEXT NOT NULL
                 )
             """)
+
+    def test_rename_task_record_updates_title_and_reports_missing_task(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                cursor = db.execute(
+                    """INSERT INTO tasks
+                       (title, actions, completed, finished, created_at)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (
+                        "Daily review",
+                        '["Review notes"]',
+                        "[]",
+                        0,
+                        "2026-11-09T10:00:00",
+                    ),
+                )
+                task_id = cursor.lastrowid
+
+            with open_database(database_path) as db:
+                self.assertEqual(
+                    rename_task_record(db, task_id, "Weekly review"), 1
+                )
+                self.assertEqual(rename_task_record(db, 999, "Missing"), 0)
+                task = db.execute(
+                    "SELECT title FROM tasks WHERE id = ?", (task_id,)
+                ).fetchone()
+
+            self.assertEqual(task["title"], "Weekly review")
 
     def test_restart_task_record_clears_progress_and_finished_state(self):
         with tempfile.TemporaryDirectory() as temp_dir:

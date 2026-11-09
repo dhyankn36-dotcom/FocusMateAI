@@ -37,6 +37,7 @@ from focusmate_core import (
     paginate_records,
     response_filename,
     restart_task_record,
+    rename_task_record,
     sort_response_records,
     sort_task_records,
     task_is_completed,
@@ -1908,10 +1909,32 @@ elif st.session_state.page == "History":
                 st.progress(percent / 100)
 
                 for i, action in enumerate(actions):
-
                     prefix = "✅" if i in completed else "▫️"
 
                     st.markdown(f"{prefix} {action}")
+
+                with st.form(key=f"rename_task_form_{task['id']}"):
+                    new_title = st.text_input(
+                        "Task title",
+                        value=task["title"],
+                        key=f"rename_task_title_{task['id']}",
+                    )
+                    rename_submitted = st.form_submit_button("Save title")
+                if rename_submitted:
+                    new_title = new_title.strip()
+                    if not new_title:
+                        st.error("Task title cannot be empty.")
+                    else:
+                        with get_db() as db:
+                            renamed = rename_task_record(
+                                db, task["id"], new_title
+                            )
+                        if not renamed:
+                            st.error("This saved task no longer exists.")
+                        else:
+                            if st.session_state.task_db_id == task["id"]:
+                                st.session_state.task_title = new_title
+                            st.rerun()
 
                 if task_is_completed(task) and st.button(
                     "Restart this task",
