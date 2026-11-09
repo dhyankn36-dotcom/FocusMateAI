@@ -1,10 +1,15 @@
 import unittest
+import sqlite3
+import tempfile
+from pathlib import Path
 
 from focusmate_core import (
     build_history_export,
     extract_action_steps,
+    filter_history,
     json_dump,
     json_load,
+    open_database,
 )
 
 
@@ -57,6 +62,58 @@ class JsonHelpersTests(unittest.TestCase):
             json_load(build_history_export([], [])),
             {"format_version": 1, "tasks": [], "responses": []},
         )
+
+    def test_filter_history_is_case_insensitive_and_searches_multiple_fields(self):
+        records = [
+            {"title": "Plan a Project", "content": "Outline milestones"},
+            {"title": "Meeting notes", "content": "Discuss the PROJECT launch"},
+            {"title": "Personal reminder", "content": "Buy groceries"},
+        ]
+
+        matches = filter_history(records, " project ", ("title", "content"))
+
+        self.assertEqual(matches, records[:2])
+
+    def test_filter_history_returns_all_records_for_blank_query(self):
+        records = [{"title": "First"}, {"title": "Second"}]
+        self.assertEqual(filter_history(records, "  ", ("title",)), records)
+
+    def test_filter_history_returns_no_records_when_query_does_not_match(self):
+        records = [{"title": "First"}, {"title": "Second"}]
+        self.assertEqual(filter_history(records, "missing", ("title",)), [])
+
+    def test_open_database_commits_and_closes_connection(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            with open_database(database_path) as db:
+                db.execute("CREATE TABLE entries (value TEXT NOT NULL)")
+                db.execute("INSERT INTO entries VALUES (?)", ("saved",))
+
+            with self.assertRaises(sqlite3.ProgrammingError):
+                db.execute("SELECT * FROM entries")
+
+            with open_database(database_path) as db:
+                self.assertEqual(
+                    db.execute("SELECT value FROM entries").fetchone()["value"],
+                    "saved",
+                )
+
+    def test_open_database_rolls_back_failed_transactions(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            with open_database(database_path) as db:
+                db.execute("CREATE TABLE entries (value TEXT NOT NULL)")
+
+            with self.assertRaisesRegex(RuntimeError, "abort transaction"):
+                with open_database(database_path) as db:
+                    db.execute("INSERT INTO entries VALUES (?)", ("discarded",))
+                    raise RuntimeError("abort transaction")
+
+            with open_database(database_path) as db:
+                self.assertEqual(
+                    db.execute("SELECT COUNT(*) FROM entries").fetchone()[0],
+                    0,
+                )
 
 
 class ActionStepTests(unittest.TestCase):

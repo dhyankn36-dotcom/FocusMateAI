@@ -1,6 +1,5 @@
 
 import html
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 
@@ -11,8 +10,10 @@ from focusmate_core import (
     extract_action_steps,
     extract_gemini_content,
     extract_gemini_error,
+    filter_history,
     json_dump,
     json_load,
+    open_database,
 )
 
 
@@ -37,9 +38,7 @@ DB_PATH = Path(__file__).resolve().parent / "focusmate.db"
 # ============================================================
 
 def get_db():
-    connection = sqlite3.connect(DB_PATH, timeout=10)
-    connection.row_factory = sqlite3.Row
-    return connection
+    return open_database(DB_PATH)
 
 
 def init_db():
@@ -968,6 +967,16 @@ elif st.session_state.page == "History":
     st.markdown("## 🕘 History")
     st.caption("Review tasks and AI responses saved on this computer.")
 
+    history_query = st.text_input(
+        "Search saved tasks and AI responses",
+        placeholder="Search titles, content, or task steps...",
+        key="history_search",
+    )
+    matching_tasks = filter_history(tasks, history_query, ("title", "actions"))
+    matching_responses = filter_history(
+        responses, history_query, ("title", "content")
+    )
+
     if tasks or responses:
         st.download_button(
             "⬇️ Download all history (.json)",
@@ -980,8 +989,10 @@ elif st.session_state.page == "History":
     st.markdown("### Saved tasks")
     if not tasks:
         st.info("No tasks saved yet.")
+    elif not matching_tasks:
+        st.info("No saved tasks match your search.")
     else:
-        for task in tasks:
+        for task in matching_tasks:
             actions = json_load(task["actions"])
             completed = json_load(task["completed"])
             total = len(actions)
@@ -1003,8 +1014,10 @@ elif st.session_state.page == "History":
 
     if not responses:
         st.info("No AI responses saved yet.")
+    elif not matching_responses:
+        st.info("No AI responses match your search.")
     else:
-        for response in responses:
+        for response in matching_responses:
             with st.expander(
                 f"{response['title']} · {response['created_at']}"
             ):

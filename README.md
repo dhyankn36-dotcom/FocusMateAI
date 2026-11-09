@@ -13,6 +13,7 @@ FocusMate AI is a Python-based productivity application designed to make everyda
 - **Personalization:** Adjust response length and language style.
 - **Task Progress Tracking:** Track completed actions and monitor progress.
 - **Task History and Persistence:** Save tasks and responses locally using SQLite.
+- **Searchable History:** Find saved tasks and AI responses by title, step, or content.
 - **History Export:** Download saved tasks and AI responses as a JSON file.
 - **Downloadable Responses:** Download AI-generated responses as text files.
 - **Local AI:** Run language generation locally through Ollama and Llama 3.2.

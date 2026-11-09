@@ -1,8 +1,6 @@
 import html
 
-import sqlite3
 import textwrap
-from contextlib import contextmanager
 
 from datetime import datetime
 
@@ -15,8 +13,10 @@ from focusmate_core import (
     build_history_export,
     extract_action_steps,
     extract_ollama_content,
+    filter_history,
     json_dump,
     json_load,
+    open_database,
 )
 
 # ============================================================
@@ -49,19 +49,8 @@ DB_PATH = Path(__file__).resolve().parent / "focusmate.db"
 
 # ============================================================
 
-@contextmanager
 def get_db():
-    connection = sqlite3.connect(DB_PATH, timeout=10)
-    connection.row_factory = sqlite3.Row
-
-    try:
-        yield connection
-        connection.commit()
-    except Exception:
-        connection.rollback()
-        raise
-    finally:
-        connection.close()
+    return open_database(DB_PATH)
 
 def init_db():
 
@@ -1574,6 +1563,16 @@ elif st.session_state.page == "History":
 
     st.caption("Review tasks and AI responses saved on this computer.")
 
+    history_query = st.text_input(
+        "Search saved tasks and AI responses",
+        placeholder="Search titles, content, or task steps...",
+        key="history_search",
+    )
+    matching_tasks = filter_history(tasks, history_query, ("title", "actions"))
+    matching_responses = filter_history(
+        responses, history_query, ("title", "content")
+    )
+
     if tasks or responses:
 
         st.download_button(
@@ -1590,9 +1589,13 @@ elif st.session_state.page == "History":
 
         st.info("No tasks saved yet.")
 
+    elif not matching_tasks:
+
+        st.info("No saved tasks match your search.")
+
     else:
 
-        for task in tasks:
+        for task in matching_tasks:
 
             actions = json_load(task["actions"])
 
@@ -1628,9 +1631,13 @@ elif st.session_state.page == "History":
 
         st.info("No AI responses saved yet.")
 
+    elif not matching_responses:
+
+        st.info("No AI responses match your search.")
+
     else:
 
-        for response in responses:
+        for response in matching_responses:
 
             with st.expander(
 

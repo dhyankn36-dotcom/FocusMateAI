@@ -1,5 +1,7 @@
 import json
 import re
+import sqlite3
+from contextlib import contextmanager
 
 
 def json_dump(value):
@@ -11,6 +13,20 @@ def json_load(value, fallback=None):
         return json.loads(value)
     except (TypeError, ValueError):
         return fallback if fallback is not None else []
+
+
+@contextmanager
+def open_database(path):
+    connection = sqlite3.connect(path, timeout=10)
+    connection.row_factory = sqlite3.Row
+    try:
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def build_history_export(tasks, responses):
@@ -43,6 +59,22 @@ def build_history_export(tasks, responses):
         ensure_ascii=False,
         indent=2,
     )
+
+
+def filter_history(records, query, fields):
+    normalized_query = query.strip().casefold()
+    if not normalized_query:
+        return list(records)
+
+    return [
+        record
+        for record in records
+        if any(
+            normalized_query in str(record[field]).casefold()
+            for field in fields
+            if record[field] is not None
+        )
+    ]
 
 
 def extract_ollama_content(payload):
