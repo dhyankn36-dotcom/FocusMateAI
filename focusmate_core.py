@@ -292,6 +292,14 @@ def extract_ollama_content(payload):
     return content.strip() if isinstance(content, str) else ""
 
 
+def extract_ollama_error(payload):
+    if not isinstance(payload, dict):
+        return ""
+
+    error = payload.get("error")
+    return error.strip() if isinstance(error, str) else ""
+
+
 def extract_gemini_content(payload):
     if not isinstance(payload, dict):
         return ""

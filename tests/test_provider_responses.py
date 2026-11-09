@@ -4,6 +4,7 @@ from focusmate_core import (
     extract_gemini_content,
     extract_gemini_error,
     extract_ollama_content,
+    extract_ollama_error,
 )
 
 
@@ -23,6 +24,17 @@ class OllamaResponseTests(unittest.TestCase):
         ):
             with self.subTest(payload=payload):
                 self.assertEqual(extract_ollama_content(payload), "")
+
+    def test_extracts_provider_error_from_expected_shape(self):
+        self.assertEqual(
+            extract_ollama_error({"error": "  model not found  "}),
+            "model not found",
+        )
+
+    def test_returns_empty_error_for_unexpected_shapes(self):
+        for payload in (None, [], {}, {"error": {"message": "invalid"}}, {"error": 1}):
+            with self.subTest(payload=payload):
+                self.assertEqual(extract_ollama_error(payload), "")
 
 
 class GeminiResponseTests(unittest.TestCase):

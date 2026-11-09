@@ -20,6 +20,7 @@ from focusmate_core import (
     delete_task_record,
     extract_action_steps,
     extract_ollama_content,
+    extract_ollama_error,
     find_resumable_task,
     filter_history,
     import_history_json,
@@ -699,13 +700,16 @@ def ask_ollama(prompt, system_prompt=None):
         )
 
         if response.status_code != 200:
-
+            try:
+                details = extract_ollama_error(response.json())
+            except ValueError:
+                details = ""
             return None, (
-
                 f"Ollama returned HTTP {response.status_code}. "
-
-                "Check that Ollama is running and the model is available."
-
+                + (
+                    details
+                    or "Check that Ollama is running and the model is available."
+                )
             )
 
         answer = extract_ollama_content(response.json())
