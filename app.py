@@ -1665,6 +1665,25 @@ elif st.session_state.page == "History":
             )
             st.rerun()
 
+    history_defaults = {
+        "history_search": "",
+        "task_history_status": "All tasks",
+        "history_start_date": None,
+        "history_end_date": None,
+        "task_history_order": "Newest first",
+        "response_history_order": "Newest first",
+    }
+    if any(
+        st.session_state.get(key, default) != default
+        for key, default in history_defaults.items()
+    ):
+        if st.button("Reset history filters and sorting", key="reset_history"):
+            for key, default in history_defaults.items():
+                st.session_state[key] = default
+            st.session_state.task_history_offset = 0
+            st.session_state.response_history_offset = 0
+            st.rerun()
+
     history_query = st.text_input(
         "Search saved tasks and AI responses",
         placeholder="Search titles, content, or task steps...",
