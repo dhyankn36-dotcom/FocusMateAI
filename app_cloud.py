@@ -6,6 +6,10 @@ from pathlib import Path
 import requests
 import streamlit as st
 from focusmate_core import (
+    MAX_MESSAGE_PURPOSE_CHARS,
+    MAX_RECIPIENT_CHARS,
+    MAX_SIMPLIFY_INPUT_CHARS,
+    MAX_TASK_INPUT_CHARS,
     build_history_export,
     delete_response_record,
     delete_task_record,
@@ -699,6 +703,7 @@ elif st.session_state.page == "Task Planner":
                 "or plan my weekly study schedule..."
             ),
             height=120,
+            max_chars=MAX_TASK_INPUT_CHARS,
         )
         submitted = st.form_submit_button(
             "✨ Generate action plan",
@@ -886,6 +891,7 @@ elif st.session_state.page == "Text Simplifier":
             "Text you want to simplify",
             placeholder="Paste your study notes or text here...",
             height=240,
+            max_chars=MAX_SIMPLIFY_INPUT_CHARS,
         )
         submitted = st.form_submit_button(
             "Simplify this text",
@@ -936,11 +942,13 @@ elif st.session_state.page == "Message Writer":
         recipient = st.text_input(
             "Who is the message for?",
             placeholder="My professor, manager, teammate...",
+            max_chars=MAX_RECIPIENT_CHARS,
         )
         purpose = st.text_area(
             "What do you want to communicate?",
             placeholder="Explain what you want your message to say...",
             height=150,
+            max_chars=MAX_MESSAGE_PURPOSE_CHARS,
         )
         tone = st.selectbox(
             "Choose a tone",

@@ -3,6 +3,11 @@ import re
 import sqlite3
 from contextlib import contextmanager
 
+MAX_TASK_INPUT_CHARS = 2_000
+MAX_SIMPLIFY_INPUT_CHARS = 10_000
+MAX_RECIPIENT_CHARS = 120
+MAX_MESSAGE_PURPOSE_CHARS = 3_000
+
 
 def json_dump(value):
     return json.dumps(value, ensure_ascii=False)
