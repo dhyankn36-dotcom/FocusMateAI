@@ -549,11 +549,11 @@ with st.sidebar:
     st.toggle("One step at a time", key="one_step_mode")
 
     st.divider()
-    st.markdown("#### 🧠 Local AI")
+    st.markdown("#### ☁️ Hosted AI")
 
     st.caption(f"Model: `{GEMINI_MODEL}`")
-    if st.button("Check Ollama connection", use_container_width=True):
-        with st.spinner("Checking local AI..."):
+    if st.button("Check Gemini connection", use_container_width=True):
+        with st.spinner("Checking Gemini API..."):
             _, error = ask_ollama(
                 "Reply with the single word Connected.",
                 "Reply with one short word only.",
@@ -561,9 +561,9 @@ with st.sidebar:
         if error:
             st.error(error)
         else:
-            st.success("Ollama is responding.")
+            st.success("Gemini is responding.")
 
-    st.caption("Your prompts are processed by your local Ollama server.")
+    st.caption("Your prompts are sent to the Google Gemini API.")
 
 
 # ============================================================

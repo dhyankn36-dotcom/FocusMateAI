@@ -2,7 +2,9 @@
 
 **Your personal AI-powered cognitive co-pilot for planning, understanding, and communication.**
 
-FocusMate AI is a Python-based productivity application designed to make everyday tasks easier to manage. It uses a locally running large language model to break complex tasks into actionable steps, simplify difficult text, and draft clear messages through an interactive Streamlit dashboard.
+FocusMate AI is a Python-based productivity application designed to make everyday tasks easier to manage. It can use a locally running model or a hosted AI backend to break complex tasks into actionable steps, simplify difficult text, and draft clear messages through an interactive Streamlit dashboard.
+
+Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) with the hosted Gemini API.
 
 ## ✨ Features
 
@@ -30,13 +32,14 @@ FocusMate AI is a Python-based productivity application designed to make everyda
 | Streamlit | Interactive web interface |
 | Ollama | Local language model runtime |
 | Llama 3.2 | AI-powered text generation |
+| Google Gemini API | Hosted AI backend used by `app_cloud.py` |
 | SQLite | Local task and response storage |
 
 ## 🏗️ How It Works
 
 1. The user selects a tool and enters a task, text, or message request.
-2. FocusMate AI prepares the input and sends it to the local Ollama service.
-3. Llama 3.2 generates a response.
+2. FocusMate AI sends the input to the configured AI backend: local Ollama in `app.py` or Google Gemini in `app_cloud.py`.
+3. The selected model generates a response.
 4. The application displays the result and saves relevant information locally.
 5. Users can revisit saved tasks, track progress, and download responses.
 
@@ -85,12 +88,25 @@ python -m streamlit run app.py
 
 Open the local URL displayed in your terminal, usually `http://localhost:8501`.
 
+## Hosted Gemini variant
+
+To run `app_cloud.py`, configure `GEMINI_API_KEY` in your Streamlit deployment's **Settings → Secrets**:
+
+```toml
+GEMINI_API_KEY = "your-gemini-api-key"
+```
+
+Keep the key in deployment secrets; do not commit it to the repository. This variant sends prompts to Google's Gemini API, unlike the local Ollama app. Its SQLite database is stored on the deployment filesystem, which may be ephemeral; use a persistent database before relying on hosted task history across restarts.
+
 ## 🔧 Troubleshooting
 
 **Ollama connection error**
 - Check that Ollama is installed and running.
 - Run `ollama list` to verify that Llama 3.2 is available.
 - Check that the application can reach the configured Ollama endpoint.
+
+**Gemini API key is missing**
+- Add `GEMINI_API_KEY` to the hosted app's Streamlit secrets and restart the app.
 
 **Python dependency errors**
 - Activate the virtual environment.
@@ -103,17 +119,16 @@ Open the local URL displayed in your terminal, usually `http://localhost:8501`.
 
 FocusMate AI is a productivity aid, not a diagnostic or medical tool.
 
-The application is designed to use a local language model. However, local processing alone does not guarantee complete privacy. Protect your device and stored data.
+The local app processes prompts through Ollama on your machine. The hosted Gemini variant sends prompts to Google's API. Protect your device, API credentials, and stored data; local processing alone does not guarantee complete privacy.
 
 AI-generated responses may contain errors or omissions. Review the output before relying on it for important decisions.
 
 ## 🗺️ Future Improvements
 
 Potential improvements include:
-- Expanded automated testing and error handling
-- Additional personalization options
-- Deployment with a compatible AI backend
-- Improved onboarding and documentation
+- Importing a previously exported history file
+- Using a persistent database for hosted deployments
+- Additional personalization and accessibility options
 
 ## 📄 License
 
@@ -121,4 +136,4 @@ No open-source license has been selected yet. Until a license is added, reuse an
 
 ---
 
-**Built with Python, Streamlit, Ollama, and Llama 3.2.**
+**Built with Python and Streamlit; supports local Ollama and hosted Gemini.**
