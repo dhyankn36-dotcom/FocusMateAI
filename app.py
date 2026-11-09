@@ -1747,7 +1747,9 @@ elif st.session_state.page == "History":
 
             actions = json_load(task["actions"])
 
-            completed = json_load(task["completed"])
+            completed = valid_completed_actions(
+                actions, json_load(task["completed"])
+            )
 
             total = len(actions)
 
