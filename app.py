@@ -11,6 +11,8 @@ import requests
 import streamlit as st
 from focusmate_core import (
     build_history_export,
+    delete_response_record,
+    delete_task_record,
     extract_action_steps,
     extract_ollama_content,
     filter_history,
@@ -1623,6 +1625,44 @@ elif st.session_state.page == "History":
 
                     st.markdown(f"{prefix} {action}")
 
+                if st.button(
+                    "Delete saved task",
+                    key=f"delete_task_{task['id']}",
+                ):
+                    st.session_state.confirm_delete_task_id = task["id"]
+                    st.rerun()
+
+                if st.session_state.get("confirm_delete_task_id") == task["id"]:
+                    st.warning("Delete this saved task permanently?")
+                    confirm_col, cancel_col = st.columns(2)
+                    with confirm_col:
+                        if st.button(
+                            "Confirm delete",
+                            key=f"confirm_delete_task_{task['id']}",
+                        ):
+                            with get_db() as db:
+                                delete_task_record(db, task["id"])
+
+                            if st.session_state.task_db_id == task["id"]:
+                                st.session_state.task_db_id = None
+                                st.session_state.task_title = ""
+                                st.session_state.task_actions = []
+                                st.session_state.completed_actions = []
+                                st.session_state.current_action = 0
+                                st.session_state.task_active = False
+                                st.session_state.task_finished = False
+                                st.session_state.task_generation += 1
+
+                            st.session_state.confirm_delete_task_id = None
+                            st.rerun()
+                    with cancel_col:
+                        if st.button(
+                            "Cancel",
+                            key=f"cancel_delete_task_{task['id']}",
+                        ):
+                            st.session_state.confirm_delete_task_id = None
+                            st.rerun()
+
     st.divider()
 
     st.markdown("### AI response history")
@@ -1648,9 +1688,7 @@ elif st.session_state.page == "History":
                 st.markdown(response["content"])
 
                 st.download_button(
-
                     "Download this response",
-
                     data=response["content"],
 
                     file_name="focusmate_response.md",
@@ -1658,10 +1696,38 @@ elif st.session_state.page == "History":
                     mime="text/markdown",
 
                     key=f"download_response_{response['id']}",
-
                     use_container_width=True,
-
                 )
+
+                if st.button(
+                    "Delete saved response",
+                    key=f"delete_response_{response['id']}",
+                ):
+                    st.session_state.confirm_delete_response_id = response["id"]
+                    st.rerun()
+
+                if (
+                    st.session_state.get("confirm_delete_response_id")
+                    == response["id"]
+                ):
+                    st.warning("Delete this saved response permanently?")
+                    confirm_col, cancel_col = st.columns(2)
+                    with confirm_col:
+                        if st.button(
+                            "Confirm delete",
+                            key=f"confirm_delete_response_{response['id']}",
+                        ):
+                            with get_db() as db:
+                                delete_response_record(db, response["id"])
+                            st.session_state.confirm_delete_response_id = None
+                            st.rerun()
+                    with cancel_col:
+                        if st.button(
+                            "Cancel",
+                            key=f"cancel_delete_response_{response['id']}",
+                        ):
+                            st.session_state.confirm_delete_response_id = None
+                            st.rerun()
 
 # ============================================================
 

@@ -1,10 +1,12 @@
-import unittest
 import sqlite3
 import tempfile
+import unittest
 from pathlib import Path
 
 from focusmate_core import (
     build_history_export,
+    delete_response_record,
+    delete_task_record,
     extract_action_steps,
     filter_history,
     json_dump,
@@ -113,6 +115,35 @@ class JsonHelpersTests(unittest.TestCase):
                 self.assertEqual(
                     db.execute("SELECT COUNT(*) FROM entries").fetchone()[0],
                     0,
+                )
+
+    def test_delete_history_records_removes_only_the_selected_rows(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            with open_database(database_path) as db:
+                db.execute("CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT)")
+                db.execute(
+                    "CREATE TABLE responses (id INTEGER PRIMARY KEY, title TEXT)"
+                )
+                db.execute("INSERT INTO tasks VALUES (1, 'Keep'), (2, 'Delete')")
+                db.execute(
+                    "INSERT INTO responses VALUES (1, 'Keep'), (2, 'Delete')"
+                )
+
+            with open_database(database_path) as db:
+                self.assertEqual(delete_task_record(db, 2), 1)
+                self.assertEqual(delete_response_record(db, 2), 1)
+                self.assertEqual(delete_task_record(db, 99), 0)
+                self.assertEqual(delete_response_record(db, 99), 0)
+
+            with open_database(database_path) as db:
+                self.assertEqual(
+                    db.execute("SELECT title FROM tasks").fetchall()[0]["title"],
+                    "Keep",
+                )
+                self.assertEqual(
+                    db.execute("SELECT title FROM responses").fetchall()[0]["title"],
+                    "Keep",
                 )
 
 

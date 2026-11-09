@@ -29,6 +29,18 @@ def open_database(path):
         connection.close()
 
 
+def delete_task_record(connection, task_id):
+    return connection.execute(
+        "DELETE FROM tasks WHERE id = ?", (task_id,)
+    ).rowcount
+
+
+def delete_response_record(connection, response_id):
+    return connection.execute(
+        "DELETE FROM responses WHERE id = ?", (response_id,)
+    ).rowcount
+
+
 def build_history_export(tasks, responses):
     task_records = [
         {
