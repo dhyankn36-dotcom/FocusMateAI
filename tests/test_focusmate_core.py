@@ -9,6 +9,7 @@ from focusmate_core import (
     build_task_markdown,
     delete_response_record,
     delete_task_record,
+    duplicate_task_record,
     extract_action_steps,
     filter_history,
     filter_records_by_date,
@@ -555,6 +556,48 @@ class HistoryImportTests(unittest.TestCase):
 
             self.assertEqual(task["completed"], "[]")
             self.assertEqual(task["finished"], 0)
+
+    def test_duplicate_task_record_preserves_original_and_resets_progress(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                cursor = db.execute(
+                    """INSERT INTO tasks
+                       (title, actions, completed, finished, created_at)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (
+                        "Study plan",
+                        '["Review", "Practice"]',
+                        "[0]",
+                        0,
+                        "2026-11-09T10:00:00",
+                    ),
+                )
+                original_id = cursor.lastrowid
+
+            with open_database(database_path) as db:
+                duplicate_id = duplicate_task_record(
+                    db, original_id, "2026-11-09T12:00:00"
+                )
+                self.assertIsNotNone(duplicate_id)
+                self.assertIsNone(duplicate_task_record(
+                    db, 999, "2026-11-09T12:00:00"
+                ))
+                records = db.execute(
+                    "SELECT id, title, actions, completed, finished, created_at "
+                    "FROM tasks ORDER BY id"
+                ).fetchall()
+
+            original, duplicate = records
+            self.assertEqual(original["title"], "Study plan")
+            self.assertEqual(original["completed"], "[0]")
+            self.assertEqual(duplicate["id"], duplicate_id)
+            self.assertEqual(duplicate["title"], "Study plan (copy)")
+            self.assertEqual(duplicate["actions"], original["actions"])
+            self.assertEqual(duplicate["completed"], "[]")
+            self.assertEqual(duplicate["finished"], 0)
+            self.assertEqual(duplicate["created_at"], "2026-11-09T12:00:00")
 
     def test_imports_exported_records_without_reusing_record_ids(self):
         export = build_history_export(

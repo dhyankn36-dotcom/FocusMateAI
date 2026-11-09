@@ -17,6 +17,7 @@ from focusmate_core import (
     count_response_records,
     delete_response_record,
     delete_task_record,
+    duplicate_task_record,
     extract_action_steps,
     extract_gemini_content,
     extract_gemini_error,
@@ -1321,6 +1322,30 @@ elif st.session_state.page == "History":
                     st.session_state.task_generation += 1
                     navigate("Task Planner")
                     st.rerun()
+
+                if st.button(
+                    "Duplicate as new task",
+                    key=f"history_duplicate_{task['id']}",
+                ):
+                    with get_db() as db:
+                        duplicate_id = duplicate_task_record(
+                            db,
+                            task["id"],
+                            datetime.now().isoformat(timespec="seconds"),
+                        )
+                    if duplicate_id is None:
+                        st.error("This saved task no longer exists.")
+                    else:
+                        st.session_state.task_db_id = duplicate_id
+                        st.session_state.task_title = f"{task['title']} (copy)"
+                        st.session_state.task_actions = actions
+                        st.session_state.completed_actions = []
+                        st.session_state.current_action = 0
+                        st.session_state.task_finished = False
+                        st.session_state.task_active = True
+                        st.session_state.task_generation += 1
+                        navigate("Task Planner")
+                        st.rerun()
 
                 if not task_is_completed(task) and st.button(
                     "Resume this task",

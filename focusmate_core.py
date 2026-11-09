@@ -126,6 +126,16 @@ def restart_task_record(connection, task_id):
     ).rowcount
 
 
+def duplicate_task_record(connection, task_id, created_at):
+    cursor = connection.execute(
+        """INSERT INTO tasks (title, actions, completed, finished, created_at)
+           SELECT title || ' (copy)', actions, '[]', 0, ?
+           FROM tasks WHERE id = ?""",
+        (created_at, task_id),
+    )
+    return cursor.lastrowid if cursor.rowcount else None
+
+
 def delete_response_record(connection, response_id):
     return connection.execute(
         "DELETE FROM responses WHERE id = ?", (response_id,)
