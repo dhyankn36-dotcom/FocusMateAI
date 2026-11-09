@@ -412,6 +412,19 @@ class HistoryImportTests(unittest.TestCase):
         self.assertEqual(paginate_records(list(range(10)), 3, 3), [3, 4, 5])
         self.assertEqual(paginate_records(list(range(5)), 10, 0), list(range(5)))
 
+    def test_paginate_records_after_filtering_keeps_search_across_all_records(self):
+        records = [
+            {"title": f"Task {index}", "actions": "Prepare the report"}
+            for index in range(45)
+        ]
+        matching_records = filter_history(records, "report", ("title", "actions"))
+
+        self.assertEqual(len(matching_records), 45)
+        self.assertEqual(
+            paginate_records(matching_records, 20, 20),
+            records[20:40],
+        )
+
     def test_paginate_records_rejects_invalid_bounds(self):
         for limit, offset in ((0, 0), (2, -1), (True, 0), (2, False)):
             with self.subTest(limit=limit, offset=offset):

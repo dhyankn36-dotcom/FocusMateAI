@@ -142,6 +142,7 @@ def load_tasks():
 
 
 RESPONSE_PAGE_SIZE = 50
+TASK_PAGE_SIZE = 20
 
 
 def load_responses(offset):
@@ -1079,9 +1080,23 @@ elif st.session_state.page == "History":
     if history_query != previous_response_query:
         response_history_offset = 0
         st.session_state.response_history_offset = 0
+        st.session_state.task_history_offset = 0
         st.session_state.response_history_query = history_query
 
     matching_tasks = filter_history(tasks, history_query, ("title", "actions"))
+    task_history_offset = st.session_state.get("task_history_offset", 0)
+    task_page_count = len(matching_tasks)
+    max_task_offset = (
+        ((task_page_count - 1) // TASK_PAGE_SIZE) * TASK_PAGE_SIZE
+        if task_page_count
+        else 0
+    )
+    if task_history_offset > max_task_offset:
+        task_history_offset = max_task_offset
+        st.session_state.task_history_offset = task_history_offset
+    matching_tasks = paginate_records(
+        matching_tasks, TASK_PAGE_SIZE, task_history_offset
+    )
     if history_query.strip():
         matching_responses = filter_history(
             load_all_responses(), history_query, ("title", "content")
@@ -1171,6 +1186,37 @@ elif st.session_state.page == "History":
                         ):
                             st.session_state.confirm_delete_task_id = None
                             st.rerun()
+
+    if task_page_count > TASK_PAGE_SIZE:
+        previous_col, page_col, next_col = st.columns([1, 2, 1])
+        with previous_col:
+            if st.button(
+                "← Newer tasks",
+                disabled=task_history_offset == 0,
+                key="task_page_newer",
+            ):
+                st.session_state.task_history_offset = max(
+                    0, task_history_offset - TASK_PAGE_SIZE
+                )
+                st.rerun()
+        with page_col:
+            current_page = task_history_offset // TASK_PAGE_SIZE + 1
+            total_pages = (task_page_count + TASK_PAGE_SIZE - 1) // TASK_PAGE_SIZE
+            st.caption(
+                f"Page {current_page} of {total_pages} · "
+                f"{task_page_count} "
+                f"{'matching' if history_query.strip() else 'saved'} tasks"
+            )
+        with next_col:
+            if st.button(
+                "Older tasks →",
+                disabled=task_history_offset + TASK_PAGE_SIZE >= task_page_count,
+                key="task_page_older",
+            ):
+                st.session_state.task_history_offset = (
+                    task_history_offset + TASK_PAGE_SIZE
+                )
+                st.rerun()
 
     st.divider()
     st.markdown("### AI response history")
