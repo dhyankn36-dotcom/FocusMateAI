@@ -112,6 +112,16 @@ python -m streamlit run app.py
 
 Open the local URL displayed in your terminal, usually `http://localhost:8501`.
 
+## 🧪 Running Tests
+
+With the project dependencies installed, run the unit and Streamlit UI tests from the repository root:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+The suite covers shared task/history logic and exercises saved-history editing in both app variants. GitHub Actions runs it on Python 3.10 and 3.12.
+
 ## Hosted Gemini variant
 
 To run `app_cloud.py`, configure `GEMINI_API_KEY` in your Streamlit deployment's **Settings → Secrets**:
