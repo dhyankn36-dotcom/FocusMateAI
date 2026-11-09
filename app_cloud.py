@@ -406,7 +406,7 @@ def build_preferences():
     )
 
 
-def ask_ollama(prompt, system_prompt=None):
+def ask_gemini(prompt, system_prompt=None):
     """Generate a response with Gemini for the hosted Streamlit app."""
     system_prompt = system_prompt or (
         "You are FocusMate AI, a practical and supportive productivity "
@@ -557,7 +557,7 @@ with st.sidebar:
     st.caption(f"Model: `{GEMINI_MODEL}`")
     if st.button("Check Gemini connection", use_container_width=True):
         with st.spinner("Checking Gemini API..."):
-            _, error = ask_ollama(
+            _, error = ask_gemini(
                 "Reply with the single word Connected.",
                 "Reply with one short word only.",
             )
@@ -733,7 +733,7 @@ Requirements:
 - Return the numbered list only.
 """
             with st.spinner("Building your action plan..."):
-                answer, error = ask_ollama(
+                answer, error = ask_gemini(
                     prompt,
                     "You are an expert task planner. Return a numbered "
                     "list of realistic and actionable steps. "
@@ -920,7 +920,7 @@ TEXT:
 {text_input.strip()}
 """
             with st.spinner("Simplifying your text..."):
-                answer, error = ask_ollama(
+                answer, error = ask_gemini(
                     prompt,
                     "You are a patient educational assistant. "
                     + build_preferences(),
@@ -981,7 +981,7 @@ Requirements:
 - Return the message only.
 """
             with st.spinner("Drafting your message..."):
-                answer, error = ask_ollama(
+                answer, error = ask_gemini(
                     prompt,
                     "You are a professional writing assistant. "
                     + build_preferences(),
