@@ -13,6 +13,38 @@ def json_load(value, fallback=None):
         return fallback if fallback is not None else []
 
 
+def build_history_export(tasks, responses):
+    task_records = [
+        {
+            "id": task["id"],
+            "title": task["title"],
+            "actions": json_load(task["actions"]),
+            "completed": json_load(task["completed"]),
+            "finished": bool(task["finished"]),
+            "created_at": task["created_at"],
+        }
+        for task in tasks
+    ]
+    response_records = [
+        {
+            "id": response["id"],
+            "title": response["title"],
+            "content": response["content"],
+            "created_at": response["created_at"],
+        }
+        for response in responses
+    ]
+    return json.dumps(
+        {
+            "format_version": 1,
+            "tasks": task_records,
+            "responses": response_records,
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+
+
 def extract_ollama_content(payload):
     if not isinstance(payload, dict):
         return ""

@@ -1,6 +1,11 @@
 import unittest
 
-from focusmate_core import extract_action_steps, json_dump, json_load
+from focusmate_core import (
+    build_history_export,
+    extract_action_steps,
+    json_dump,
+    json_load,
+)
 
 
 class JsonHelpersTests(unittest.TestCase):
@@ -16,6 +21,42 @@ class JsonHelpersTests(unittest.TestCase):
     def test_json_load_uses_supplied_fallback_for_invalid_json(self):
         fallback = {"status": "unknown"}
         self.assertIs(json_load(None, fallback), fallback)
+
+    def test_build_history_export_preserves_records_and_unicode(self):
+        payload = json_load(
+            build_history_export(
+                [
+                    {
+                        "id": 3,
+                        "title": "完成 project",
+                        "actions": '["Plan", "Review"]',
+                        "completed": "[0]",
+                        "finished": 0,
+                        "created_at": "2026-11-09T10:00:00",
+                    }
+                ],
+                [
+                    {
+                        "id": 8,
+                        "title": "Draft",
+                        "content": "Hello 🌱",
+                        "created_at": "2026-11-09T10:05:00",
+                    }
+                ],
+            )
+        )
+
+        self.assertEqual(payload["format_version"], 1)
+        self.assertEqual(payload["tasks"][0]["actions"], ["Plan", "Review"])
+        self.assertEqual(payload["tasks"][0]["completed"], [0])
+        self.assertFalse(payload["tasks"][0]["finished"])
+        self.assertEqual(payload["responses"][0]["content"], "Hello 🌱")
+
+    def test_build_history_export_handles_empty_history(self):
+        self.assertEqual(
+            json_load(build_history_export([], [])),
+            {"format_version": 1, "tasks": [], "responses": []},
+        )
 
 
 class ActionStepTests(unittest.TestCase):

@@ -12,6 +12,7 @@ import requests
 
 import streamlit as st
 from focusmate_core import (
+    build_history_export,
     extract_action_steps,
     extract_ollama_content,
     json_dump,
@@ -211,9 +212,15 @@ def load_responses():
     with get_db() as db:
 
         return db.execute(
-
             "SELECT * FROM responses ORDER BY id DESC LIMIT 50"
+        ).fetchall()
 
+def load_all_responses():
+
+    with get_db() as db:
+
+        return db.execute(
+            "SELECT * FROM responses ORDER BY id DESC"
         ).fetchall()
 
 init_db()
@@ -1566,6 +1573,16 @@ elif st.session_state.page == "History":
     st.markdown("## 🕘 History")
 
     st.caption("Review tasks and AI responses saved on this computer.")
+
+    if tasks or responses:
+
+        st.download_button(
+            "⬇️ Download all history (.json)",
+            data=build_history_export(tasks, load_all_responses()),
+            file_name="focusmate_history.json",
+            mime="application/json",
+            use_container_width=True,
+        )
 
     st.markdown("### Saved tasks")
 
