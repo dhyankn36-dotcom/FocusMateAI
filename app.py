@@ -1917,18 +1917,37 @@ elif st.session_state.page == "History":
                     "Restart this task",
                     key=f"history_restart_{task['id']}",
                 ):
-                    with get_db() as db:
-                        restart_task_record(db, task["id"])
-                    st.session_state.task_db_id = task["id"]
-                    st.session_state.task_title = task["title"]
-                    st.session_state.task_actions = actions
-                    st.session_state.completed_actions = []
-                    st.session_state.current_action = 0
-                    st.session_state.task_finished = False
-                    st.session_state.task_active = True
-                    st.session_state.task_generation += 1
-                    navigate("Task Planner")
-                    st.rerun()
+                    st.session_state.confirm_restart_task_id = task["id"]
+
+                if st.session_state.get("confirm_restart_task_id") == task["id"]:
+                    st.warning("Restarting resets this task's saved progress.")
+                    confirm_col, cancel_col = st.columns(2)
+                    if confirm_col.button(
+                        "Confirm restart",
+                        key=f"history_confirm_restart_{task['id']}",
+                    ):
+                        with get_db() as db:
+                            restarted = restart_task_record(db, task["id"])
+                        st.session_state.pop("confirm_restart_task_id", None)
+                        if not restarted:
+                            st.error("This saved task no longer exists.")
+                        else:
+                            st.session_state.task_db_id = task["id"]
+                            st.session_state.task_title = task["title"]
+                            st.session_state.task_actions = actions
+                            st.session_state.completed_actions = []
+                            st.session_state.current_action = 0
+                            st.session_state.task_finished = False
+                            st.session_state.task_active = True
+                            st.session_state.task_generation += 1
+                            navigate("Task Planner")
+                            st.rerun()
+                    if cancel_col.button(
+                        "Cancel",
+                        key=f"history_cancel_restart_{task['id']}",
+                    ):
+                        st.session_state.pop("confirm_restart_task_id", None)
+                        st.rerun()
 
                 if st.button(
                     "Duplicate as new task",

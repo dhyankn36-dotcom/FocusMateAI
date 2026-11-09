@@ -26,7 +26,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **History Filter Reset:** Clear search, status, date, and sorting options in one action.
 - **Task History Sorting:** Order saved tasks by creation time (newest or oldest) or title.
 - **History Quick Resume:** Resume an unfinished saved task directly from filtered task history.
-- **Restart Completed Tasks:** Reset a completed plan's progress and run it again without recreating the task.
+- **Restart Completed Tasks:** Restart a completed plan after confirming the progress reset, without recreating the task.
 - **Duplicate Saved Tasks:** Create a fresh plan from any saved task while preserving the original and its progress.
 - **Task Checklist Downloads:** Export an individual saved task as a Markdown checklist with completion progress.
 - **Paged Response History:** Browse saved AI responses beyond the latest 50.
