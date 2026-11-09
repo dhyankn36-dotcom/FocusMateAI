@@ -251,20 +251,20 @@ class JsonHelpersTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Task status"):
             filter_tasks_by_status([], "Archived")
 
-    def test_sort_task_records_orders_by_id_or_case_insensitive_title(self):
+    def test_sort_task_records_uses_creation_time_and_case_insensitive_title(self):
         tasks = [
-            {"id": 3, "title": "beta"},
-            {"id": 2, "title": "Alpha"},
-            {"id": 1, "title": "alpha"},
+            {"id": 3, "title": "beta", "created_at": "2026-11-07"},
+            {"id": 2, "title": "Alpha", "created_at": "2026-11-09"},
+            {"id": 1, "title": "alpha", "created_at": "2026-11-08"},
         ]
 
         self.assertEqual(
             [task["id"] for task in sort_task_records(tasks, "Newest first")],
-            [3, 2, 1],
+            [2, 1, 3],
         )
         self.assertEqual(
             [task["id"] for task in sort_task_records(tasks, "Oldest first")],
-            [1, 2, 3],
+            [3, 1, 2],
         )
         self.assertEqual(
             [task["id"] for task in sort_task_records(tasks, "Title A-Z")],
@@ -548,8 +548,9 @@ class HistoryImportTests(unittest.TestCase):
                     "INSERT INTO responses (title, content, created_at) "
                     "VALUES (?, ?, ?)",
                     [
-                        (f"Response {index}", "content", "2026-11-09")
-                        for index in range(1, 4)
+                        ("Earlier", "content", "2026-11-08"),
+                        ("Later", "content", "2026-11-10"),
+                        ("Middle", "content", "2026-11-09"),
                     ],
                 )
 
@@ -557,7 +558,11 @@ class HistoryImportTests(unittest.TestCase):
                     [row["title"] for row in load_response_page(
                         db, 2, 0, "Oldest first"
                     )],
-                    ["Response 1", "Response 2"],
+                    ["Earlier", "Middle"],
+                )
+                self.assertEqual(
+                    [row["title"] for row in load_response_page(db, 2, 0)],
+                    ["Later", "Middle"],
                 )
 
     def test_response_pages_support_case_insensitive_title_order(self):
@@ -592,22 +597,22 @@ class HistoryImportTests(unittest.TestCase):
 
     def test_sort_response_records_orders_search_matches(self):
         records = [
-            {"id": 3, "title": "C"},
-            {"id": 1, "title": "A"},
-            {"id": 2, "title": "B"},
+            {"id": 3, "title": "C", "created_at": "2026-11-07"},
+            {"id": 1, "title": "A", "created_at": "2026-11-09"},
+            {"id": 2, "title": "B", "created_at": "2026-11-08"},
         ]
 
         self.assertEqual(
             [record["id"] for record in sort_response_records(
                 records, "Oldest first"
             )],
-            [1, 2, 3],
+            [3, 2, 1],
         )
         self.assertEqual(
             [record["id"] for record in sort_response_records(
                 records, "Newest first"
             )],
-            [3, 2, 1],
+            [1, 2, 3],
         )
         title_records = [
             {"id": 3, "title": "beta"},

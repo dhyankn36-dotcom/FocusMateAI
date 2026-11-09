@@ -62,8 +62,8 @@ def load_response_page(connection, limit, offset, order="Newest first"):
     if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
         raise ValueError("Page offset must be a non-negative integer.")
     ordering = {
-        "Newest first": "id DESC",
-        "Oldest first": "id ASC",
+        "Newest first": "created_at DESC, id DESC",
+        "Oldest first": "created_at ASC, id ASC",
         "Title A-Z": "title COLLATE NOCASE ASC, id DESC",
     }.get(order)
     if ordering is None:
@@ -79,9 +79,16 @@ def load_response_page(connection, limit, offset, order="Newest first"):
 
 def sort_response_records(records, order):
     if order == "Newest first":
-        return sorted(records, key=lambda record: record["id"], reverse=True)
+        return sorted(
+            records,
+            key=lambda record: (record["created_at"], record["id"]),
+            reverse=True,
+        )
     if order == "Oldest first":
-        return sorted(records, key=lambda record: record["id"])
+        return sorted(
+            records,
+            key=lambda record: (record["created_at"], record["id"]),
+        )
     if order == "Title A-Z":
         return sorted(
             records,
@@ -297,9 +304,16 @@ def filter_tasks_by_status(tasks, status):
 
 def sort_task_records(tasks, order):
     if order == "Newest first":
-        return sorted(tasks, key=lambda task: task["id"], reverse=True)
+        return sorted(
+            tasks,
+            key=lambda task: (task["created_at"], task["id"]),
+            reverse=True,
+        )
     if order == "Oldest first":
-        return sorted(tasks, key=lambda task: task["id"])
+        return sorted(
+            tasks,
+            key=lambda task: (task["created_at"], task["id"]),
+        )
     if order == "Title A-Z":
         return sorted(
             tasks,

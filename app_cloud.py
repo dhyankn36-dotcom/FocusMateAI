@@ -141,7 +141,7 @@ def save_response(title, content):
 def load_tasks():
     with get_db() as db:
         return db.execute(
-            "SELECT * FROM tasks ORDER BY id DESC"
+            "SELECT * FROM tasks ORDER BY created_at DESC, id DESC"
         ).fetchall()
 
 
