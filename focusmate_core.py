@@ -119,6 +119,13 @@ def delete_task_record(connection, task_id):
     ).rowcount
 
 
+def restart_task_record(connection, task_id):
+    return connection.execute(
+        "UPDATE tasks SET completed = '[]', finished = 0 WHERE id = ?",
+        (task_id,),
+    ).rowcount
+
+
 def delete_response_record(connection, response_id):
     return connection.execute(
         "DELETE FROM responses WHERE id = ?", (response_id,)

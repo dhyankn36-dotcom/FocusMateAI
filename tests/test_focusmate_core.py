@@ -23,6 +23,7 @@ from focusmate_core import (
     load_response_page,
     paginate_records,
     response_filename,
+    restart_task_record,
     sort_response_records,
     sort_task_records,
     task_stats,
@@ -524,6 +525,36 @@ class HistoryImportTests(unittest.TestCase):
                     created_at TEXT NOT NULL
                 )
             """)
+
+    def test_restart_task_record_clears_progress_and_finished_state(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                cursor = db.execute(
+                    """INSERT INTO tasks
+                       (title, actions, completed, finished, created_at)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (
+                        "Daily review",
+                        '["Review notes", "Plan tomorrow"]',
+                        "[0, 1]",
+                        1,
+                        "2026-11-09T10:00:00",
+                    ),
+                )
+                task_id = cursor.lastrowid
+
+            with open_database(database_path) as db:
+                self.assertEqual(restart_task_record(db, task_id), 1)
+                self.assertEqual(restart_task_record(db, 999), 0)
+                task = db.execute(
+                    "SELECT completed, finished FROM tasks WHERE id = ?",
+                    (task_id,),
+                ).fetchone()
+
+            self.assertEqual(task["completed"], "[]")
+            self.assertEqual(task["finished"], 0)
 
     def test_imports_exported_records_without_reusing_record_ids(self):
         export = build_history_export(
