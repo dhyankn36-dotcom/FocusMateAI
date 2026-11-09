@@ -21,7 +21,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **Task History and Persistence:** Save tasks and responses locally using SQLite.
 - **Searchable History:** Find saved tasks and AI responses across all pages by title, step, or content.
 - **Paged Task History:** Browse saved tasks in smaller pages, with search results paginated across the full history.
-- **Task Status Filters:** Narrow saved tasks to in-progress or completed plans.
+- **Task Status Filters:** Narrow saved tasks to in-progress or completed plans, based on both completion status and checked actions.
 - **History Date Filters:** Narrow tasks and responses to a creation-date range; filters also apply to matching-history exports.
 - **History Filter Reset:** Clear search, status, date, and sorting options in one action.
 - **Task History Sorting:** Order saved tasks by creation time (newest or oldest) or title.

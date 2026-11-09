@@ -26,6 +26,7 @@ from focusmate_core import (
     sort_response_records,
     sort_task_records,
     task_stats,
+    task_is_completed,
     undo_last_completed_action,
     valid_completed_actions,
 )
@@ -121,6 +122,25 @@ class JsonHelpersTests(unittest.TestCase):
             {"format_version": 1, "tasks": [], "responses": []},
         )
 
+    def test_build_history_export_corrects_completed_progress_status(self):
+        payload = json_load(
+            build_history_export(
+                [
+                    {
+                        "id": 1,
+                        "title": "Finished by progress",
+                        "actions": '["One"]',
+                        "completed": "[0]",
+                        "finished": 0,
+                        "created_at": "2026-11-09T10:00:00",
+                    }
+                ],
+                [],
+            )
+        )
+
+        self.assertTrue(payload["tasks"][0]["finished"])
+
     def test_filtered_history_export_contains_all_matching_records(self):
         tasks = [
             {
@@ -213,6 +233,21 @@ class JsonHelpersTests(unittest.TestCase):
 
         self.assertIn("Status: Completed", build_task_markdown(task))
 
+    def test_completed_progress_overrides_stale_finished_flag(self):
+        task = {
+            "id": 1,
+            "title": "Imported complete plan",
+            "actions": '["First", "Second"]',
+            "completed": "[0, 1]",
+            "finished": 0,
+            "created_at": "2026-11-09T10:00:00",
+        }
+
+        self.assertTrue(task_is_completed(task))
+        self.assertIn("Status: Completed", build_task_markdown(task))
+        self.assertEqual(task_stats([task])[:3], (1, 1, 0))
+        self.assertIsNone(find_resumable_task([task]))
+
     def test_filter_history_is_case_insensitive_and_searches_multiple_fields(self):
         records = [
             {"title": "Plan a Project", "content": "Outline milestones"},
@@ -265,9 +300,18 @@ class JsonHelpersTests(unittest.TestCase):
 
     def test_filter_tasks_by_status_returns_all_and_matching_tasks(self):
         tasks = [
-            {"id": 1, "finished": 0},
-            {"id": 2, "finished": 1},
-            {"id": 3, "finished": 0},
+            {
+                "id": 1, "finished": 0, "actions": '["One"]', "completed": "[]"
+            },
+            {
+                "id": 2, "finished": 1, "actions": '["One"]', "completed": "[0]"
+            },
+            {
+                "id": 3, "finished": 0, "actions": '["One"]', "completed": "[]"
+            },
+            {
+                "id": 4, "finished": 0, "actions": '["One"]', "completed": "[0]"
+            },
         ]
 
         self.assertEqual(filter_tasks_by_status(tasks, "All tasks"), tasks)
@@ -277,7 +321,7 @@ class JsonHelpersTests(unittest.TestCase):
         )
         self.assertEqual(
             [task["id"] for task in filter_tasks_by_status(tasks, "Completed")],
-            [2],
+            [2, 4],
         )
 
     def test_filter_tasks_by_status_rejects_unknown_status(self):

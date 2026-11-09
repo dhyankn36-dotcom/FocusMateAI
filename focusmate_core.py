@@ -140,7 +140,7 @@ def build_history_export(tasks, responses):
             "title": task["title"],
             "actions": json_load(task["actions"]),
             "completed": json_load(task["completed"]),
-            "finished": bool(task["finished"]),
+            "finished": task_is_completed(task),
             "created_at": task["created_at"],
         }
         for task in tasks
@@ -320,7 +320,7 @@ def filter_tasks_by_status(tasks, status):
         raise ValueError("Task status must be All tasks, In progress, or Completed.")
 
     finished = status == "Completed"
-    return [task for task in tasks if bool(task["finished"]) is finished]
+    return [task for task in tasks if task_is_completed(task) is finished]
 
 
 def sort_task_records(tasks, order):
@@ -360,6 +360,19 @@ def valid_completed_actions(actions, completed):
     )
 
 
+def task_is_completed(task):
+    if bool(task["finished"]):
+        return True
+
+    actions = json_load(task["actions"])
+    if not isinstance(actions, list) or not actions:
+        return False
+    completed = valid_completed_actions(
+        actions, json_load(task["completed"])
+    )
+    return len(completed) == len(actions)
+
+
 def build_task_markdown(task):
     actions = json_load(task["actions"])
     if not isinstance(actions, list):
@@ -367,7 +380,7 @@ def build_task_markdown(task):
     completed = valid_completed_actions(
         actions, json_load(task["completed"])
     )
-    finished = bool(task["finished"])
+    finished = task_is_completed(task)
     status = "Completed" if finished else "In progress"
     checklist = [
         f"- [{'x' if index in completed else ' '}] {action}"
@@ -405,7 +418,7 @@ def task_stats(tasks):
 
         completed = valid_completed_actions(actions, raw_completed)
 
-        is_finished = bool(task["finished"])
+        is_finished = task_is_completed(task)
         finished_tasks += int(is_finished)
         active_tasks += int(not is_finished and bool(actions))
         total_actions += len(actions)
@@ -426,12 +439,7 @@ def find_resumable_task(tasks):
         if not isinstance(actions, list) or not actions:
             continue
 
-        completed = json_load(task["completed"])
-        if not isinstance(completed, list):
-            completed = []
-
-        valid_completed = valid_completed_actions(actions, completed)
-        if not task["finished"] and len(valid_completed) < len(actions):
+        if not task_is_completed(task):
             return task
 
     return None

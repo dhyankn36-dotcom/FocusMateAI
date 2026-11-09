@@ -37,6 +37,7 @@ from focusmate_core import (
     response_filename,
     sort_response_records,
     sort_task_records,
+    task_is_completed,
     task_stats,
     undo_last_completed_action,
     valid_completed_actions,
@@ -1426,6 +1427,7 @@ Requirements:
 
                 ):
 
+                    task_finished = task_is_completed(task)
                     st.session_state.task_db_id = task["id"]
 
                     st.session_state.task_title = task["title"]
@@ -1434,9 +1436,8 @@ Requirements:
 
                     st.session_state.completed_actions = saved_done
 
-                    st.session_state.task_finished = bool(task["finished"])
-
-                    st.session_state.task_active = not bool(task["finished"])
+                    st.session_state.task_finished = task_finished
+                    st.session_state.task_active = not task_finished
 
                     st.session_state.task_generation += 1
 
