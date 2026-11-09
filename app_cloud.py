@@ -13,6 +13,7 @@ from focusmate_core import (
     MAX_SIMPLIFY_INPUT_CHARS,
     MAX_TASK_INPUT_CHARS,
     build_history_export,
+    build_task_markdown,
     count_response_records,
     delete_response_record,
     delete_task_record,
@@ -1162,6 +1163,15 @@ elif st.session_state.page == "History":
                 for i, action in enumerate(actions):
                     prefix = "✅" if i in completed else "▫️"
                     st.markdown(f"{prefix} {action}")
+
+                st.download_button(
+                    "Download task checklist",
+                    data=build_task_markdown(task),
+                    file_name=response_filename(task["title"]),
+                    mime="text/markdown",
+                    key=f"download_task_{task['id']}",
+                    use_container_width=True,
+                )
 
                 if st.button(
                     "Delete saved task",

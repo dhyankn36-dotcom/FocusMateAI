@@ -286,6 +286,33 @@ def valid_completed_actions(actions, completed):
     )
 
 
+def build_task_markdown(task):
+    actions = json_load(task["actions"])
+    if not isinstance(actions, list):
+        actions = []
+    completed = valid_completed_actions(
+        actions, json_load(task["completed"])
+    )
+    finished = bool(task["finished"])
+    status = "Completed" if finished else "In progress"
+    checklist = [
+        f"- [{'x' if index in completed else ' '}] {action}"
+        for index, action in enumerate(actions)
+    ]
+
+    return "\n".join(
+        [
+            f"# {task['title']}",
+            "",
+            f"Created: {task['created_at']}",
+            f"Status: {status}",
+            f"Progress: {len(completed)}/{len(actions)} actions complete",
+            "",
+            *checklist,
+        ]
+    )
+
+
 def task_stats(tasks):
     total_tasks = len(tasks)
     finished_tasks = 0

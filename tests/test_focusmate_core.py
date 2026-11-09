@@ -5,6 +5,7 @@ from pathlib import Path
 
 from focusmate_core import (
     build_history_export,
+    build_task_markdown,
     delete_response_record,
     delete_task_record,
     extract_action_steps,
@@ -115,6 +116,36 @@ class JsonHelpersTests(unittest.TestCase):
             json_load(build_history_export([], [])),
             {"format_version": 1, "tasks": [], "responses": []},
         )
+
+    def test_build_task_markdown_includes_progress_and_checklist(self):
+        task = {
+            "title": "Plan the release",
+            "actions": '["Write release notes", "Review deployment"]',
+            "completed": "[0, 99, -1, true]",
+            "finished": 0,
+            "created_at": "2026-11-09T10:00:00",
+        }
+
+        self.assertEqual(
+            build_task_markdown(task),
+            "# Plan the release\n\n"
+            "Created: 2026-11-09T10:00:00\n"
+            "Status: In progress\n"
+            "Progress: 1/2 actions complete\n\n"
+            "- [x] Write release notes\n"
+            "- [ ] Review deployment",
+        )
+
+    def test_build_task_markdown_marks_finished_tasks_completed(self):
+        task = {
+            "title": "Finished task",
+            "actions": '["One action"]',
+            "completed": "[0]",
+            "finished": 1,
+            "created_at": "2026-11-09T10:00:00",
+        }
+
+        self.assertIn("Status: Completed", build_task_markdown(task))
 
     def test_filter_history_is_case_insensitive_and_searches_multiple_fields(self):
         records = [
