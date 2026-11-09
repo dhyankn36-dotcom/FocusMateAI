@@ -1689,6 +1689,11 @@ elif st.session_state.page == "History":
         filter_history(tasks, history_query, ("title", "actions")),
         task_status,
     )
+    task_count_label = (
+        "matching"
+        if history_query.strip() or task_status != "All tasks"
+        else "saved"
+    )
     task_history_offset = st.session_state.get("task_history_offset", 0)
     task_page_count = len(matching_tasks)
     max_task_offset = (
@@ -1840,7 +1845,7 @@ elif st.session_state.page == "History":
             st.caption(
                 f"Page {current_page} of {total_pages} · "
                 f"{task_page_count} "
-                f"{'matching' if history_query.strip() else 'saved'} tasks"
+                f"{task_count_label} tasks"
             )
 
         with next_col:
