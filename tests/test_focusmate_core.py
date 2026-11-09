@@ -312,6 +312,7 @@ class JsonHelpersTests(unittest.TestCase):
             {
                 "id": 4, "finished": 0, "actions": '["One"]', "completed": "[0]"
             },
+            {"id": 5, "finished": 0, "actions": "[]", "completed": "[]"},
         ]
 
         self.assertEqual(filter_tasks_by_status(tasks, "All tasks"), tasks)

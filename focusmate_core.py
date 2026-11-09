@@ -320,7 +320,14 @@ def filter_tasks_by_status(tasks, status):
         raise ValueError("Task status must be All tasks, In progress, or Completed.")
 
     finished = status == "Completed"
-    return [task for task in tasks if task_is_completed(task) is finished]
+    matching_tasks = []
+    for task in tasks:
+        is_completed = task_is_completed(task)
+        actions = json_load(task["actions"])
+        has_actions = isinstance(actions, list) and bool(actions)
+        if is_completed is finished and (finished or has_actions):
+            matching_tasks.append(task)
+    return matching_tasks
 
 
 def sort_task_records(tasks, order):
