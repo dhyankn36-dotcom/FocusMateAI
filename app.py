@@ -19,6 +19,7 @@ from focusmate_core import (
     json_dump,
     json_load,
     open_database,
+    task_stats,
     undo_last_completed_action,
 )
 
@@ -777,18 +778,6 @@ def undo_task_progress():
 
     save_task_progress()
 
-def task_stats(tasks):
-
-    total = len(tasks)
-
-    finished = sum(int(t["finished"]) for t in tasks)
-
-    actions = sum(len(json_load(t["actions"])) for t in tasks)
-
-    completed = sum(len(json_load(t["completed"])) for t in tasks)
-
-    return total, finished, actions, completed
-
 def navigate(page):
 
     st.session_state.page = page
@@ -934,10 +923,14 @@ if st.session_state.page == "Dashboard":
     </div>
     """)
 
-    total_tasks, finished_tasks, total_actions, completed_actions = (
-
+    (
+        total_tasks,
+        finished_tasks,
+        active_tasks,
+        total_actions,
+        completed_actions,
+    ) = (
         task_stats(tasks)
-
     )
 
     remaining = max(0, total_actions - completed_actions)
@@ -952,15 +945,12 @@ if st.session_state.page == "Dashboard":
 
     st.markdown("### 📊 Your overview")
 
-    m1, m2, m3, m4 = st.columns(4)
-
+    m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("Total tasks", total_tasks)
-
     m2.metric("Tasks finished", finished_tasks)
-
-    m3.metric("Actions completed", completed_actions)
-
-    m4.metric("Actions remaining", remaining)
+    m3.metric("Tasks in progress", active_tasks)
+    m4.metric("Actions completed", completed_actions)
+    m5.metric("Actions remaining", remaining)
 
     st.markdown("### Overall progress")
 

@@ -97,6 +97,45 @@ def filter_history(records, query, fields):
     ]
 
 
+def task_stats(tasks):
+    total_tasks = len(tasks)
+    finished_tasks = 0
+    active_tasks = 0
+    total_actions = 0
+    completed_actions = 0
+
+    for task in tasks:
+        actions = json_load(task["actions"])
+        if not isinstance(actions, list):
+            actions = []
+
+        raw_completed = json_load(task["completed"])
+        if not isinstance(raw_completed, list):
+            raw_completed = []
+
+        completed = {
+            index
+            for index in raw_completed
+            if isinstance(index, int)
+            and not isinstance(index, bool)
+            and 0 <= index < len(actions)
+        }
+
+        is_finished = bool(task["finished"])
+        finished_tasks += int(is_finished)
+        active_tasks += int(not is_finished and bool(actions))
+        total_actions += len(actions)
+        completed_actions += len(completed)
+
+    return (
+        total_tasks,
+        finished_tasks,
+        active_tasks,
+        total_actions,
+        completed_actions,
+    )
+
+
 def extract_ollama_content(payload):
     if not isinstance(payload, dict):
         return ""

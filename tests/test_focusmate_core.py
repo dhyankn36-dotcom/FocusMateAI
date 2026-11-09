@@ -12,6 +12,7 @@ from focusmate_core import (
     json_dump,
     json_load,
     open_database,
+    task_stats,
     undo_last_completed_action,
 )
 
@@ -93,6 +94,30 @@ class JsonHelpersTests(unittest.TestCase):
 
     def test_undo_last_completed_action_handles_no_completed_steps(self):
         self.assertEqual(undo_last_completed_action([]), [])
+
+    def test_task_stats_counts_totals_and_active_tasks(self):
+        tasks = [
+            {
+                "actions": '["Plan", "Build", "Review"]',
+                "completed": "[0, 0, 99, -1, true, \"1\"]",
+                "finished": 0,
+            },
+            {
+                "actions": '["Write", "Share"]',
+                "completed": "[0, 1]",
+                "finished": 1,
+            },
+            {
+                "actions": "invalid",
+                "completed": "[]",
+                "finished": 0,
+            },
+        ]
+
+        self.assertEqual(task_stats(tasks), (3, 1, 1, 5, 3))
+
+    def test_task_stats_handles_empty_history(self):
+        self.assertEqual(task_stats([]), (0, 0, 0, 0, 0))
 
     def test_open_database_commits_and_closes_connection(self):
         with tempfile.TemporaryDirectory() as temp_dir:
