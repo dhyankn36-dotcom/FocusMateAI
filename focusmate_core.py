@@ -67,6 +67,7 @@ def extract_gemini_error(payload):
 
 def extract_action_steps(text):
     actions = []
+    seen = set()
     ignored = (
         "here is your plan", "here's your plan",
         "here is your first action", "here's your first action",
@@ -97,7 +98,9 @@ def extract_action_steps(text):
             continue
         if lower in {"steps", "plan", "your plan", "action plan"}:
             continue
-        if line not in actions:
+        normalized = line.casefold()
+        if normalized not in seen:
             actions.append(line)
+            seen.add(normalized)
 
     return actions[:12]
