@@ -40,6 +40,7 @@ from focusmate_core import (
     task_is_completed,
     task_stats,
     undo_last_completed_action,
+    update_response_content_record,
     valid_completed_actions,
 )
 
@@ -1513,6 +1514,27 @@ elif st.session_state.page == "History":
                                 db, response["id"], new_title
                             )
                         if not renamed:
+                            st.error("This saved response no longer exists.")
+                        else:
+                            st.rerun()
+
+                with st.form(key=f"edit_response_form_{response['id']}"):
+                    new_content = st.text_area(
+                        "Response content",
+                        value=response["content"],
+                        height=240,
+                        key=f"edit_response_content_{response['id']}",
+                    )
+                    content_submitted = st.form_submit_button("Save response")
+                if content_submitted:
+                    if not new_content.strip():
+                        st.error("Response content cannot be empty.")
+                    else:
+                        with get_db() as db:
+                            updated = update_response_content_record(
+                                db, response["id"], new_content
+                            )
+                        if not updated:
                             st.error("This saved response no longer exists.")
                         else:
                             st.rerun()

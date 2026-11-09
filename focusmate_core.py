@@ -154,6 +154,12 @@ def rename_response_record(connection, response_id, title):
     ).rowcount
 
 
+def update_response_content_record(connection, response_id, content):
+    return connection.execute(
+        "UPDATE responses SET content = ? WHERE id = ?", (content, response_id)
+    ).rowcount
+
+
 def undo_last_completed_action(completed):
     if not completed:
         return []
