@@ -11,7 +11,12 @@ from pathlib import Path
 import requests
 
 import streamlit as st
-from focusmate_core import extract_action_steps, json_dump, json_load
+from focusmate_core import (
+    extract_action_steps,
+    extract_ollama_content,
+    json_dump,
+    json_load,
+)
 
 # ============================================================
 
@@ -695,7 +700,7 @@ def ask_ollama(prompt, system_prompt=None):
 
             )
 
-        answer = response.json().get("message", {}).get("content", "").strip()
+        answer = extract_ollama_content(response.json())
 
         if not answer:
 

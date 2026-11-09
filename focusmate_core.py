@@ -13,6 +13,58 @@ def json_load(value, fallback=None):
         return fallback if fallback is not None else []
 
 
+def extract_ollama_content(payload):
+    if not isinstance(payload, dict):
+        return ""
+
+    message = payload.get("message")
+    if not isinstance(message, dict):
+        return ""
+
+    content = message.get("content")
+    return content.strip() if isinstance(content, str) else ""
+
+
+def extract_gemini_content(payload):
+    if not isinstance(payload, dict):
+        return ""
+
+    candidates = payload.get("candidates")
+    if not isinstance(candidates, list) or not candidates:
+        return ""
+
+    candidate = candidates[0]
+    if not isinstance(candidate, dict):
+        return ""
+
+    content = candidate.get("content")
+    if not isinstance(content, dict):
+        return ""
+
+    parts = content.get("parts")
+    if not isinstance(parts, list):
+        return ""
+
+    answer = "".join(
+        part["text"]
+        for part in parts
+        if isinstance(part, dict) and isinstance(part.get("text"), str)
+    )
+    return answer.strip()
+
+
+def extract_gemini_error(payload):
+    if not isinstance(payload, dict):
+        return ""
+
+    error = payload.get("error")
+    if not isinstance(error, dict):
+        return ""
+
+    message = error.get("message")
+    return message.strip() if isinstance(message, str) else ""
+
+
 def extract_action_steps(text):
     actions = []
     ignored = (

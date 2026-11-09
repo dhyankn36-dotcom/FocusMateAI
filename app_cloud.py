@@ -6,7 +6,13 @@ from pathlib import Path
 
 import requests
 import streamlit as st
-from focusmate_core import extract_action_steps, json_dump, json_load
+from focusmate_core import (
+    extract_action_steps,
+    extract_gemini_content,
+    extract_gemini_error,
+    json_dump,
+    json_load,
+)
 
 
 # ============================================================
@@ -416,7 +422,7 @@ def ask_ollama(prompt, system_prompt=None):
         )
         if response.status_code != 200:
             try:
-                details = response.json().get("error", {}).get("message", "")
+                details = extract_gemini_error(response.json())
             except ValueError:
                 details = ""
             return None, (
@@ -424,13 +430,7 @@ def ask_ollama(prompt, system_prompt=None):
                 + (details or "Check your API key, model access, and quota.")
             )
 
-        data = response.json()
-        candidates = data.get("candidates", [])
-        answer = "".join(
-            part.get("text", "")
-            for part in (candidates[0].get("content", {}).get("parts", []) if candidates else [])
-            if isinstance(part, dict)
-        ).strip()
+        answer = extract_gemini_content(response.json())
         if not answer:
             return None, "Gemini returned an empty response. Please try again."
         return answer, None
