@@ -271,6 +271,21 @@ def filter_tasks_by_status(tasks, status):
     return [task for task in tasks if bool(task["finished"]) is finished]
 
 
+def sort_task_records(tasks, order):
+    if order == "Newest first":
+        return sorted(tasks, key=lambda task: task["id"], reverse=True)
+    if order == "Oldest first":
+        return sorted(tasks, key=lambda task: task["id"])
+    if order == "Title A-Z":
+        return sorted(
+            tasks,
+            key=lambda task: (task["title"].casefold(), -task["id"]),
+        )
+    raise ValueError(
+        "Task order must be Newest first, Oldest first, or Title A-Z."
+    )
+
+
 def valid_completed_actions(actions, completed):
     if not isinstance(actions, list) or not isinstance(completed, list):
         return []

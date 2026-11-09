@@ -21,6 +21,7 @@ from focusmate_core import (
     load_response_page,
     paginate_records,
     response_filename,
+    sort_task_records,
     task_stats,
     undo_last_completed_action,
     valid_completed_actions,
@@ -186,6 +187,30 @@ class JsonHelpersTests(unittest.TestCase):
     def test_filter_tasks_by_status_rejects_unknown_status(self):
         with self.assertRaisesRegex(ValueError, "Task status"):
             filter_tasks_by_status([], "Archived")
+
+    def test_sort_task_records_orders_by_id_or_case_insensitive_title(self):
+        tasks = [
+            {"id": 3, "title": "beta"},
+            {"id": 2, "title": "Alpha"},
+            {"id": 1, "title": "alpha"},
+        ]
+
+        self.assertEqual(
+            [task["id"] for task in sort_task_records(tasks, "Newest first")],
+            [3, 2, 1],
+        )
+        self.assertEqual(
+            [task["id"] for task in sort_task_records(tasks, "Oldest first")],
+            [1, 2, 3],
+        )
+        self.assertEqual(
+            [task["id"] for task in sort_task_records(tasks, "Title A-Z")],
+            [2, 1, 3],
+        )
+
+    def test_sort_task_records_rejects_unknown_order(self):
+        with self.assertRaisesRegex(ValueError, "Task order"):
+            sort_task_records([], "Random")
 
     def test_undo_last_completed_action_removes_highest_step_index(self):
         self.assertEqual(undo_last_completed_action([0, 1, 2]), [0, 1])

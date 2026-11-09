@@ -22,6 +22,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **Searchable History:** Find saved tasks and AI responses across all pages by title, step, or content.
 - **Paged Task History:** Browse saved tasks in smaller pages, with search results paginated across the full history.
 - **Task Status Filters:** Narrow saved tasks to in-progress or completed plans.
+- **Task History Sorting:** Order saved tasks by newest, oldest, or title.
 - **Task Checklist Downloads:** Export an individual saved task as a Markdown checklist with completion progress.
 - **Paged Response History:** Browse saved AI responses beyond the latest 50.
 - **Descriptive Downloads:** Save responses using safe filenames based on their titles.

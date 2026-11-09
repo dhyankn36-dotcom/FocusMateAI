@@ -34,6 +34,7 @@ from focusmate_core import (
     open_database,
     paginate_records,
     response_filename,
+    sort_task_records,
     task_stats,
     undo_last_completed_action,
     valid_completed_actions,
@@ -1671,6 +1672,11 @@ elif st.session_state.page == "History":
         ("All tasks", "In progress", "Completed"),
         key="task_history_status",
     )
+    task_order = st.selectbox(
+        "Sort tasks",
+        ("Newest first", "Oldest first", "Title A-Z"),
+        key="task_history_order",
+    )
     previous_response_query = st.session_state.get(
         "response_history_query", ""
     )
@@ -1680,14 +1686,17 @@ elif st.session_state.page == "History":
         st.session_state.task_history_offset = 0
         st.session_state.response_history_query = history_query
 
-    task_filter = (history_query, task_status)
+    task_filter = (history_query, task_status, task_order)
     if st.session_state.get("task_history_filter") != task_filter:
         st.session_state.task_history_offset = 0
         st.session_state.task_history_filter = task_filter
 
-    matching_tasks = filter_tasks_by_status(
-        filter_history(tasks, history_query, ("title", "actions")),
-        task_status,
+    matching_tasks = sort_task_records(
+        filter_tasks_by_status(
+            filter_history(tasks, history_query, ("title", "actions")),
+            task_status,
+        ),
+        task_order,
     )
     task_count_label = (
         "matching"
