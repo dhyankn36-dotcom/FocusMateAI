@@ -56,16 +56,27 @@ def open_database(path):
         connection.close()
 
 
-def load_response_page(connection, limit, offset):
+def load_response_page(connection, limit, offset, order="Newest first"):
     if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
         raise ValueError("Page size must be a positive integer.")
     if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
         raise ValueError("Page offset must be a non-negative integer.")
+    if order not in {"Newest first", "Oldest first"}:
+        raise ValueError("Response order must be Newest first or Oldest first.")
+    direction = "DESC" if order == "Newest first" else "ASC"
 
     return connection.execute(
-        "SELECT * FROM responses ORDER BY id DESC LIMIT ? OFFSET ?",
+        f"SELECT * FROM responses ORDER BY id {direction} LIMIT ? OFFSET ?",
         (limit, offset),
     ).fetchall()
+
+
+def sort_response_records(records, order):
+    if order == "Newest first":
+        return sorted(records, key=lambda record: record["id"], reverse=True)
+    if order == "Oldest first":
+        return sorted(records, key=lambda record: record["id"])
+    raise ValueError("Response order must be Newest first or Oldest first.")
 
 
 def paginate_records(records, limit, offset):

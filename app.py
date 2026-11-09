@@ -34,6 +34,7 @@ from focusmate_core import (
     open_database,
     paginate_records,
     response_filename,
+    sort_response_records,
     sort_task_records,
     task_stats,
     undo_last_completed_action,
@@ -218,11 +219,11 @@ def load_tasks():
 RESPONSE_PAGE_SIZE = 50
 TASK_PAGE_SIZE = 20
 
-def load_responses(offset):
+def load_responses(offset, order):
 
     with get_db() as db:
 
-        return load_response_page(db, RESPONSE_PAGE_SIZE, offset)
+        return load_response_page(db, RESPONSE_PAGE_SIZE, offset, order)
 
 def count_responses():
 
@@ -928,6 +929,9 @@ with st.sidebar:
 tasks = load_tasks()
 
 response_count = count_responses()
+response_order = st.session_state.get(
+    "response_history_order", "Newest first"
+)
 response_history_offset = st.session_state.get("response_history_offset", 0)
 max_response_offset = (
     ((response_count - 1) // RESPONSE_PAGE_SIZE) * RESPONSE_PAGE_SIZE
@@ -937,8 +941,6 @@ max_response_offset = (
 if response_history_offset > max_response_offset:
     response_history_offset = max_response_offset
     st.session_state.response_history_offset = response_history_offset
-responses = load_responses(response_history_offset)
-
 # ============================================================
 
 # DASHBOARD
@@ -1677,6 +1679,11 @@ elif st.session_state.page == "History":
         ("Newest first", "Oldest first", "Title A-Z"),
         key="task_history_order",
     )
+    response_order = st.selectbox(
+        "Sort AI responses",
+        ("Newest first", "Oldest first"),
+        key="response_history_order",
+    )
     previous_response_query = st.session_state.get(
         "response_history_query", ""
     )
@@ -1685,6 +1692,13 @@ elif st.session_state.page == "History":
         st.session_state.response_history_offset = 0
         st.session_state.task_history_offset = 0
         st.session_state.response_history_query = history_query
+    previous_response_order = st.session_state.get(
+        "previous_response_history_order", response_order
+    )
+    if response_order != previous_response_order:
+        response_history_offset = 0
+        st.session_state.response_history_offset = 0
+        st.session_state.previous_response_history_order = response_order
 
     task_filter = (history_query, task_status, task_order)
     if st.session_state.get("task_history_filter") != task_filter:
@@ -1720,6 +1734,9 @@ elif st.session_state.page == "History":
         matching_responses = filter_history(
             load_all_responses(), history_query, ("title", "content")
         )
+        matching_responses = sort_response_records(
+            matching_responses, response_order
+        )
         response_page_count = len(matching_responses)
         max_matching_offset = (
             ((response_page_count - 1) // RESPONSE_PAGE_SIZE) * RESPONSE_PAGE_SIZE
@@ -1733,10 +1750,12 @@ elif st.session_state.page == "History":
             matching_responses, RESPONSE_PAGE_SIZE, response_history_offset
         )
     else:
-        matching_responses = responses
+        matching_responses = load_responses(
+            response_history_offset, response_order
+        )
         response_page_count = response_count
 
-    if tasks or responses:
+    if tasks or response_count:
 
         st.download_button(
             "⬇️ Download all history (.json)",
@@ -1872,7 +1891,7 @@ elif st.session_state.page == "History":
 
     st.markdown("### AI response history")
 
-    if not responses:
+    if not response_count:
 
         st.info("No AI responses saved yet.")
 
@@ -1940,7 +1959,7 @@ elif st.session_state.page == "History":
 
         with previous_col:
             if st.button(
-                "← Newer",
+                "← Newer" if response_order == "Newest first" else "← Older",
                 disabled=response_history_offset == 0,
                 key="response_page_newer",
             ):
@@ -1962,7 +1981,7 @@ elif st.session_state.page == "History":
 
         with next_col:
             if st.button(
-                "Older →",
+                "Older →" if response_order == "Newest first" else "Newer →",
                 disabled=response_history_offset + RESPONSE_PAGE_SIZE >= response_page_count,
                 key="response_page_older",
             ):

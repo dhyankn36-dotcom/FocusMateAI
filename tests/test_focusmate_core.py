@@ -21,6 +21,7 @@ from focusmate_core import (
     load_response_page,
     paginate_records,
     response_filename,
+    sort_response_records,
     sort_task_records,
     task_stats,
     undo_last_completed_action,
@@ -475,6 +476,55 @@ class HistoryImportTests(unittest.TestCase):
                      "Response 6", "Response 5", "Response 4", "Response 3",
                      "Response 2", "Response 1"],
                 )
+
+    def test_response_pages_support_oldest_first(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                db.executemany(
+                    "INSERT INTO responses (title, content, created_at) "
+                    "VALUES (?, ?, ?)",
+                    [
+                        (f"Response {index}", "content", "2026-11-09")
+                        for index in range(1, 4)
+                    ],
+                )
+
+                self.assertEqual(
+                    [row["title"] for row in load_response_page(
+                        db, 2, 0, "Oldest first"
+                    )],
+                    ["Response 1", "Response 2"],
+                )
+
+    def test_response_page_rejects_unknown_order(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                with self.assertRaisesRegex(ValueError, "Response order"):
+                    load_response_page(db, 10, 0, "Random")
+
+    def test_sort_response_records_orders_search_matches(self):
+        records = [
+            {"id": 3, "title": "C"},
+            {"id": 1, "title": "A"},
+            {"id": 2, "title": "B"},
+        ]
+
+        self.assertEqual(
+            [record["id"] for record in sort_response_records(
+                records, "Oldest first"
+            )],
+            [1, 2, 3],
+        )
+        self.assertEqual(
+            [record["id"] for record in sort_response_records(
+                records, "Newest first"
+            )],
+            [3, 2, 1],
+        )
 
     def test_response_page_rejects_invalid_limit_and_offset(self):
         with tempfile.TemporaryDirectory() as temp_dir:
