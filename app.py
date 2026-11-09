@@ -20,6 +20,7 @@ from focusmate_core import (
     delete_task_record,
     extract_action_steps,
     extract_ollama_content,
+    find_resumable_task,
     filter_history,
     import_history_json,
     json_dump,
@@ -27,6 +28,7 @@ from focusmate_core import (
     open_database,
     task_stats,
     undo_last_completed_action,
+    valid_completed_actions,
 )
 
 # ============================================================
@@ -1047,6 +1049,24 @@ if st.session_state.page == "Dashboard":
                 )
 
                 st.progress(percent / 100)
+
+        resumable_task = find_resumable_task(tasks)
+        if resumable_task and st.button(
+            f"Resume latest task: {resumable_task['title']}",
+            use_container_width=True,
+        ):
+            st.session_state.task_db_id = resumable_task["id"]
+            st.session_state.task_title = resumable_task["title"]
+            st.session_state.task_actions = json_load(resumable_task["actions"])
+            st.session_state.completed_actions = valid_completed_actions(
+                json_load(resumable_task["actions"]),
+                json_load(resumable_task["completed"]),
+            )
+            st.session_state.task_finished = False
+            st.session_state.task_active = True
+            st.session_state.task_generation += 1
+            navigate("Task Planner")
+            st.rerun()
 
     else:
 

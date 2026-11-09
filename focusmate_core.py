@@ -215,6 +215,21 @@ def filter_history(records, query, fields):
     ]
 
 
+def valid_completed_actions(actions, completed):
+    if not isinstance(actions, list) or not isinstance(completed, list):
+        return []
+
+    return sorted(
+        {
+            index
+            for index in completed
+            if isinstance(index, int)
+            and not isinstance(index, bool)
+            and 0 <= index < len(actions)
+        }
+    )
+
+
 def task_stats(tasks):
     total_tasks = len(tasks)
     finished_tasks = 0
@@ -231,13 +246,7 @@ def task_stats(tasks):
         if not isinstance(raw_completed, list):
             raw_completed = []
 
-        completed = {
-            index
-            for index in raw_completed
-            if isinstance(index, int)
-            and not isinstance(index, bool)
-            and 0 <= index < len(actions)
-        }
+        completed = valid_completed_actions(actions, raw_completed)
 
         is_finished = bool(task["finished"])
         finished_tasks += int(is_finished)
@@ -252,6 +261,23 @@ def task_stats(tasks):
         total_actions,
         completed_actions,
     )
+
+
+def find_resumable_task(tasks):
+    for task in tasks:
+        actions = json_load(task["actions"])
+        if not isinstance(actions, list) or not actions:
+            continue
+
+        completed = json_load(task["completed"])
+        if not isinstance(completed, list):
+            completed = []
+
+        valid_completed = valid_completed_actions(actions, completed)
+        if not task["finished"] and len(valid_completed) < len(actions):
+            return task
+
+    return None
 
 
 def extract_ollama_content(payload):

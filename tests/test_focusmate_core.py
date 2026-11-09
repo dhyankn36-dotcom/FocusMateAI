@@ -9,12 +9,14 @@ from focusmate_core import (
     delete_task_record,
     extract_action_steps,
     filter_history,
+    find_resumable_task,
     json_dump,
     json_load,
     open_database,
     import_history_json,
     task_stats,
     undo_last_completed_action,
+    valid_completed_actions,
 )
 
 
@@ -119,6 +121,60 @@ class JsonHelpersTests(unittest.TestCase):
 
     def test_task_stats_handles_empty_history(self):
         self.assertEqual(task_stats([]), (0, 0, 0, 0, 0))
+
+    def test_find_resumable_task_skips_finished_and_completed_tasks(self):
+        tasks = [
+            {
+                "id": 3,
+                "title": "Finished",
+                "actions": '["Only action"]',
+                "completed": "[0]",
+                "finished": 1,
+            },
+            {
+                "id": 2,
+                "title": "Already complete",
+                "actions": '["Only action"]',
+                "completed": "[0]",
+                "finished": 0,
+            },
+            {
+                "id": 1,
+                "title": "Continue this",
+                "actions": '["First", "Second"]',
+                "completed": "[0]",
+                "finished": 0,
+            },
+        ]
+
+        self.assertEqual(find_resumable_task(tasks)["id"], 1)
+
+    def test_find_resumable_task_ignores_invalid_progress_and_empty_plans(self):
+        tasks = [
+            {
+                "id": 2,
+                "title": "Empty",
+                "actions": "[]",
+                "completed": "[]",
+                "finished": 0,
+            },
+            {
+                "id": 1,
+                "title": "Resume",
+                "actions": '["First", "Second"]',
+                "completed": "[99, -1, true]",
+                "finished": 0,
+            },
+        ]
+
+        self.assertEqual(find_resumable_task(tasks)["id"], 1)
+        self.assertIsNone(find_resumable_task(tasks[:1]))
+
+    def test_valid_completed_actions_filters_invalid_indexes_and_duplicates(self):
+        self.assertEqual(
+            valid_completed_actions(["First", "Second"], [1, 0, 1, -1, 9, True]),
+            [0, 1],
+        )
 
     def test_open_database_commits_and_closes_connection(self):
         with tempfile.TemporaryDirectory() as temp_dir:

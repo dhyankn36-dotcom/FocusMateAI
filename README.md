@@ -16,6 +16,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **Input Limits:** Keep AI requests responsive with clear per-tool text limits.
 - **Task Progress Tracking:** Track completed actions and monitor progress.
 - **Progress Overview:** See active tasks, finished tasks, and remaining actions at a glance.
+- **Quick Resume:** Continue the latest unfinished task from the dashboard.
 - **Flexible Progress:** Undo the last completed step while using one-step mode.
 - **Task History and Persistence:** Save tasks and responses locally using SQLite.
 - **Searchable History:** Find saved tasks and AI responses by title, step, or content.
