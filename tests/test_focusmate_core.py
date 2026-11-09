@@ -498,6 +498,28 @@ class HistoryImportTests(unittest.TestCase):
                     ["Response 1", "Response 2"],
                 )
 
+    def test_response_pages_support_case_insensitive_title_order(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                db.executemany(
+                    "INSERT INTO responses (title, content, created_at) "
+                    "VALUES (?, ?, ?)",
+                    [
+                        ("zebra", "content", "2026-11-09"),
+                        ("Alpha", "content", "2026-11-09"),
+                        ("alpha", "content", "2026-11-09"),
+                    ],
+                )
+
+                self.assertEqual(
+                    [row["title"] for row in load_response_page(
+                        db, 3, 0, "Title A-Z"
+                    )],
+                    ["alpha", "Alpha", "zebra"],
+                )
+
     def test_response_page_rejects_unknown_order(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "focusmate.db"
@@ -524,6 +546,17 @@ class HistoryImportTests(unittest.TestCase):
                 records, "Newest first"
             )],
             [3, 2, 1],
+        )
+        title_records = [
+            {"id": 3, "title": "beta"},
+            {"id": 2, "title": "Alpha"},
+            {"id": 1, "title": "alpha"},
+        ]
+        self.assertEqual(
+            [record["id"] for record in sort_response_records(
+                title_records, "Title A-Z"
+            )],
+            [2, 1, 3],
         )
 
     def test_response_page_rejects_invalid_limit_and_offset(self):

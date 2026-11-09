@@ -1681,7 +1681,7 @@ elif st.session_state.page == "History":
     )
     response_order = st.selectbox(
         "Sort AI responses",
-        ("Newest first", "Oldest first"),
+        ("Newest first", "Oldest first", "Title A-Z"),
         key="response_history_order",
     )
     previous_response_query = st.session_state.get(
@@ -1858,7 +1858,7 @@ elif st.session_state.page == "History":
 
         with previous_col:
             if st.button(
-                "← Newer tasks",
+                "← Previous page",
                 disabled=task_history_offset == 0,
                 key="task_page_newer",
             ):
@@ -1878,7 +1878,7 @@ elif st.session_state.page == "History":
 
         with next_col:
             if st.button(
-                "Older tasks →",
+                "Next page →",
                 disabled=task_history_offset + TASK_PAGE_SIZE >= task_page_count,
                 key="task_page_older",
             ):
@@ -1959,7 +1959,7 @@ elif st.session_state.page == "History":
 
         with previous_col:
             if st.button(
-                "← Newer" if response_order == "Newest first" else "← Older",
+                "← Previous page",
                 disabled=response_history_offset == 0,
                 key="response_page_newer",
             ):
@@ -1981,7 +1981,7 @@ elif st.session_state.page == "History":
 
         with next_col:
             if st.button(
-                "Older →" if response_order == "Newest first" else "Newer →",
+                "Next page →",
                 disabled=response_history_offset + RESPONSE_PAGE_SIZE >= response_page_count,
                 key="response_page_older",
             ):

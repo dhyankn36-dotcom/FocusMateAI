@@ -25,7 +25,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **Task History Sorting:** Order saved tasks by newest, oldest, or title.
 - **Task Checklist Downloads:** Export an individual saved task as a Markdown checklist with completion progress.
 - **Paged Response History:** Browse saved AI responses beyond the latest 50.
-- **Response History Sorting:** Browse saved responses from newest or oldest first, including search results.
+- **Response History Sorting:** Browse saved responses by newest, oldest, or title, including search results.
 - **Descriptive Downloads:** Save responses using safe filenames based on their titles.
 - **History Backup:** Export saved tasks and AI responses to JSON and import backups up to 5 MB.
 - **History Management:** Delete individual saved tasks and AI responses.
