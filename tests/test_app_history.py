@@ -7,8 +7,8 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 
-class AppHistorySmokeTests(unittest.TestCase):
-    def test_history_editors_render_in_both_apps(self):
+class AppHistoryTests(unittest.TestCase):
+    def test_history_editors_render_and_persist_changes_in_both_apps(self):
         repository_root = Path(__file__).resolve().parents[1]
 
         for app_name in ("app.py", "app_cloud.py"):
@@ -31,7 +31,7 @@ class AppHistorySmokeTests(unittest.TestCase):
                            (title, actions, completed, finished, created_at)
                            VALUES (?, ?, ?, ?, ?)""",
                         (
-                            "Smoke test task",
+                            "History test task",
                             '["Review notes"]',
                             "[]",
                             0,
@@ -42,7 +42,7 @@ class AppHistorySmokeTests(unittest.TestCase):
                         """INSERT INTO responses (title, content, created_at)
                            VALUES (?, ?, ?)""",
                         (
-                            "Smoke test response",
+                            "History test response",
                             "Response content for the history editor.",
                             "2026-11-09T10:00:00",
                         ),
@@ -73,6 +73,89 @@ class AppHistorySmokeTests(unittest.TestCase):
                         widget.key == "edit_response_content_1"
                         for widget in app.text_area
                     )
+                )
+
+                app.text_input(key="rename_task_title_1").set_value(
+                    "Updated history test task"
+                )
+                app.button(
+                    key="FormSubmitter:rename_task_form_1-Save title"
+                ).click()
+                app.run(timeout=30)
+                if app.exception:
+                    self.fail(f"{app_name} task rename failed: {app.exception}")
+
+                app.text_input(key="rename_response_title_1").set_value(
+                    "Updated history test response"
+                )
+                app.button(
+                    key="FormSubmitter:rename_response_form_1-Save title"
+                ).click()
+                app.run(timeout=30)
+                if app.exception:
+                    self.fail(f"{app_name} response rename failed: {app.exception}")
+
+                app.text_area(key="edit_response_content_1").set_value(
+                    "Edited history test response content."
+                )
+                app.button(
+                    key="FormSubmitter:edit_response_form_1-Save response"
+                ).click()
+                app.run(timeout=30)
+                if app.exception:
+                    self.fail(f"{app_name} response edit failed: {app.exception}")
+
+                app.text_input(key="rename_task_title_1").set_value("  ")
+                app.button(
+                    key="FormSubmitter:rename_task_form_1-Save title"
+                ).click()
+                app.run(timeout=30)
+                self.assertTrue(
+                    any(
+                        "Task title cannot be empty." in item.value
+                        for item in app.error
+                    )
+                )
+
+                app.text_input(key="rename_response_title_1").set_value("  ")
+                app.button(
+                    key="FormSubmitter:rename_response_form_1-Save title"
+                ).click()
+                app.run(timeout=30)
+                self.assertTrue(
+                    any(
+                        "Response title cannot be empty." in item.value
+                        for item in app.error
+                    )
+                )
+
+                app.text_area(key="edit_response_content_1").set_value("  ")
+                app.button(
+                    key="FormSubmitter:edit_response_form_1-Save response"
+                ).click()
+                app.run(timeout=30)
+                self.assertTrue(
+                    any(
+                        "Response content cannot be empty." in item.value
+                        for item in app.error
+                    )
+                )
+
+                db = sqlite3.connect(temp_path / "focusmate.db")
+                try:
+                    task = db.execute(
+                        "SELECT title FROM tasks WHERE id = 1"
+                    ).fetchone()
+                    response = db.execute(
+                        "SELECT title, content FROM responses WHERE id = 1"
+                    ).fetchone()
+                finally:
+                    db.close()
+
+                self.assertEqual(task[0], "Updated history test task")
+                self.assertEqual(response[0], "Updated history test response")
+                self.assertEqual(
+                    response[1], "Edited history test response content."
                 )
 
 
