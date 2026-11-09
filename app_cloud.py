@@ -1304,6 +1304,21 @@ elif st.session_state.page == "History":
                     prefix = "✅" if i in completed else "▫️"
                     st.markdown(f"{prefix} {action}")
 
+                if not task_is_completed(task) and st.button(
+                    "Resume this task",
+                    key=f"history_resume_{task['id']}",
+                ):
+                    st.session_state.task_db_id = task["id"]
+                    st.session_state.task_title = task["title"]
+                    st.session_state.task_actions = actions
+                    st.session_state.completed_actions = completed
+                    st.session_state.current_action = 0
+                    st.session_state.task_finished = False
+                    st.session_state.task_active = True
+                    st.session_state.task_generation += 1
+                    navigate("Task Planner")
+                    st.rerun()
+
                 st.download_button(
                     "Download task checklist",
                     data=build_task_markdown(task),

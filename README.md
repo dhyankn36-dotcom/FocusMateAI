@@ -25,6 +25,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **History Date Filters:** Narrow tasks and responses to a creation-date range; filters also apply to matching-history exports.
 - **History Filter Reset:** Clear search, status, date, and sorting options in one action.
 - **Task History Sorting:** Order saved tasks by creation time (newest or oldest) or title.
+- **History Quick Resume:** Resume an unfinished saved task directly from filtered task history.
 - **Task Checklist Downloads:** Export an individual saved task as a Markdown checklist with completion progress.
 - **Paged Response History:** Browse saved AI responses beyond the latest 50.
 - **Response History Sorting:** Browse saved responses by creation time (newest or oldest) or title, including search results.
