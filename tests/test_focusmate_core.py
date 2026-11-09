@@ -119,6 +119,68 @@ class JsonHelpersTests(unittest.TestCase):
             {"format_version": 1, "tasks": [], "responses": []},
         )
 
+    def test_filtered_history_export_contains_all_matching_records(self):
+        tasks = [
+            {
+                "id": 1,
+                "title": "Project plan",
+                "actions": '["Write project brief"]',
+                "completed": "[]",
+                "finished": 0,
+                "created_at": "2026-11-09T10:00:00",
+            },
+            {
+                "id": 2,
+                "title": "Finished project",
+                "actions": '["Review project"]',
+                "completed": "[0]",
+                "finished": 1,
+                "created_at": "2026-11-09T10:05:00",
+            },
+            {
+                "id": 3,
+                "title": "Personal plan",
+                "actions": '["Buy groceries"]',
+                "completed": "[]",
+                "finished": 0,
+                "created_at": "2026-11-09T10:10:00",
+            },
+        ]
+        responses = [
+            {
+                "id": 4,
+                "title": "Project notes",
+                "content": "Project notes",
+                "created_at": "2026-11-09T10:15:00",
+            },
+            {
+                "id": 5,
+                "title": "Shopping list",
+                "content": "Groceries",
+                "created_at": "2026-11-09T10:20:00",
+            },
+        ]
+        matching_tasks = filter_tasks_by_status(
+            filter_history(tasks, "project", ("title", "actions")),
+            "In progress",
+        )
+        matching_responses = filter_history(
+            responses, "project", ("title", "content")
+        )
+
+        payload = json_load(
+            build_history_export(matching_tasks, matching_responses)
+        )
+
+        self.assertEqual(
+            [task["title"] for task in payload["tasks"]],
+            ["Project plan"],
+        )
+        self.assertEqual(
+            [response["title"] for response in payload["responses"]],
+            ["Project notes"],
+        )
+
     def test_build_task_markdown_includes_progress_and_checklist(self):
         task = {
             "title": "Plan the release",

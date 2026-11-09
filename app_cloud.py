@@ -1121,6 +1121,7 @@ elif st.session_state.page == "History":
         ),
         task_order,
     )
+    matching_tasks_for_export = matching_tasks
     task_count_label = (
         "matching"
         if history_query.strip() or task_status != "All tasks"
@@ -1146,6 +1147,7 @@ elif st.session_state.page == "History":
         matching_responses = sort_response_records(
             matching_responses, response_order
         )
+        matching_responses_for_export = matching_responses
         response_page_count = len(matching_responses)
         max_matching_offset = (
             ((response_page_count - 1) // RESPONSE_PAGE_SIZE) * RESPONSE_PAGE_SIZE
@@ -1159,6 +1161,7 @@ elif st.session_state.page == "History":
             matching_responses, RESPONSE_PAGE_SIZE, response_history_offset
         )
     else:
+        matching_responses_for_export = None
         matching_responses = load_responses(
             response_history_offset, response_order
         )
@@ -1169,6 +1172,19 @@ elif st.session_state.page == "History":
             "⬇️ Download all history (.json)",
             data=build_history_export(tasks, load_all_responses()),
             file_name="focusmate_history.json",
+            mime="application/json",
+            use_container_width=True,
+        )
+
+    if history_query.strip() or task_status != "All tasks":
+        if matching_responses_for_export is None:
+            matching_responses_for_export = load_all_responses()
+        st.download_button(
+            "⬇️ Download matching history (.json)",
+            data=build_history_export(
+                matching_tasks_for_export, matching_responses_for_export
+            ),
+            file_name="focusmate_matching_history.json",
             mime="application/json",
             use_container_width=True,
         )

@@ -28,6 +28,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **Response History Sorting:** Browse saved responses by newest, oldest, or title, including search results.
 - **Descriptive Downloads:** Save responses using safe filenames based on their titles.
 - **History Backup:** Export saved tasks and AI responses to JSON and import backups up to 5 MB.
+- **Filtered History Export:** Download all search and task-status matches as JSON without limiting the export to the visible page.
 - **History Management:** Delete individual saved tasks and AI responses.
 - **Downloadable Responses:** Download AI-generated responses as text files.
 - **Local AI:** Run language generation locally through Ollama and Llama 3.2.
