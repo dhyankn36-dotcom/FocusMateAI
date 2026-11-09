@@ -41,6 +41,14 @@ def delete_response_record(connection, response_id):
     ).rowcount
 
 
+def undo_last_completed_action(completed):
+    if not completed:
+        return []
+
+    last_action = max(completed)
+    return [action for action in completed if action != last_action]
+
+
 def build_history_export(tasks, responses):
     task_records = [
         {

@@ -12,6 +12,7 @@ FocusMate AI is a Python-based productivity application designed to make everyda
 - **One-Step Mode:** Focus on one action at a time.
 - **Personalization:** Adjust response length and language style.
 - **Task Progress Tracking:** Track completed actions and monitor progress.
+- **Flexible Progress:** Undo the last completed step while using one-step mode.
 - **Task History and Persistence:** Save tasks and responses locally using SQLite.
 - **Searchable History:** Find saved tasks and AI responses by title, step, or content.
 - **History Export:** Download saved tasks and AI responses as a JSON file.

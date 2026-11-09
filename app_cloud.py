@@ -16,6 +16,7 @@ from focusmate_core import (
     json_dump,
     json_load,
     open_database,
+    undo_last_completed_action,
 )
 
 
@@ -480,6 +481,15 @@ def finish_task():
     save_task_progress()
 
 
+def undo_task_progress():
+    st.session_state.completed_actions = undo_last_completed_action(
+        st.session_state.completed_actions
+    )
+    st.session_state.task_finished = False
+    st.session_state.task_active = True
+    save_task_progress()
+
+
 def task_stats(tasks):
     total = len(tasks)
     finished = sum(int(t["finished"]) for t in tasks)
@@ -757,6 +767,13 @@ Requirements:
             st.session_state.task_finished = True
             st.session_state.task_active = False
             save_task_progress()
+            if st.session_state.one_step_mode and completed:
+                if st.button(
+                    "↩ Undo last completed step",
+                    use_container_width=True,
+                ):
+                    undo_task_progress()
+                    st.rerun()
         else:
             incomplete = [i for i in range(total) if i not in completed]
             current = incomplete[0]
@@ -801,6 +818,11 @@ Requirements:
                         ]
                         save_task_progress()
                         st.rerun()
+
+            if st.session_state.one_step_mode and completed:
+                if st.button("↩ Undo last completed step", use_container_width=True):
+                    undo_task_progress()
+                    st.rerun()
 
             with st.expander("📋 View full action plan"):
                 for i, action in enumerate(actions):
