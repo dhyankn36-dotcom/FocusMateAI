@@ -106,8 +106,8 @@ class AppHistoryTests(unittest.TestCase):
                         (
                             "History test task",
                             '["Review notes"]',
-                            "[]",
-                            0,
+                            "[0]",
+                            1,
                             "2026-11-09T10:00:00",
                         ),
                     )
@@ -214,6 +214,64 @@ class AppHistoryTests(unittest.TestCase):
                     )
                 )
 
+                app.button(key="history_restart_1").click()
+                app.run(timeout=30)
+                self.assertTrue(
+                    any(button.key == "history_confirm_restart_1" for button in app.button)
+                )
+                app.button(key="history_cancel_restart_1").click()
+                app.run(timeout=30)
+
+                db = sqlite3.connect(temp_path / "focusmate.db")
+                try:
+                    task_progress = db.execute(
+                        "SELECT completed, finished FROM tasks WHERE id = 1"
+                    ).fetchone()
+                finally:
+                    db.close()
+                self.assertEqual(task_progress, ("[0]", 1))
+
+                app.button(key="history_restart_1").click()
+                app.run(timeout=30)
+                app.button(key="history_confirm_restart_1").click()
+                app.run(timeout=30)
+                if app.exception:
+                    self.fail(f"{app_name} confirmed restart failed: {app.exception}")
+                db = sqlite3.connect(temp_path / "focusmate.db")
+                try:
+                    task_progress = db.execute(
+                        "SELECT completed, finished FROM tasks WHERE id = 1"
+                    ).fetchone()
+                finally:
+                    db.close()
+                self.assertEqual(task_progress, ("[]", 0))
+
+                app.session_state["page"] = "History"
+                app.run(timeout=30)
+                app.button(key="history_duplicate_1").click()
+                app.run(timeout=30)
+                if app.exception:
+                    self.fail(f"{app_name} task duplication failed: {app.exception}")
+                db = sqlite3.connect(temp_path / "focusmate.db")
+                try:
+                    duplicate_task = db.execute(
+                        "SELECT title, actions, completed, finished FROM tasks "
+                        "WHERE id = 2"
+                    ).fetchone()
+                finally:
+                    db.close()
+                self.assertEqual(
+                    duplicate_task,
+                    (
+                        "Updated history test task (copy)",
+                        '["Review notes"]',
+                        "[]",
+                        0,
+                    ),
+                )
+
+                app.session_state["page"] = "History"
+                app.run(timeout=30)
                 app.button(key="duplicate_response_1").click()
                 app.run(timeout=30)
                 if app.exception:
