@@ -30,6 +30,7 @@ from focusmate_core import (
     json_load,
     load_response_page,
     open_database,
+    paginate_records,
     response_filename,
     task_stats,
     undo_last_completed_action,
@@ -1662,10 +1663,34 @@ elif st.session_state.page == "History":
         placeholder="Search titles, content, or task steps...",
         key="history_search",
     )
-    matching_tasks = filter_history(tasks, history_query, ("title", "actions"))
-    matching_responses = filter_history(
-        responses, history_query, ("title", "content")
+    previous_response_query = st.session_state.get(
+        "response_history_query", ""
     )
+    if history_query != previous_response_query:
+        response_history_offset = 0
+        st.session_state.response_history_offset = 0
+        st.session_state.response_history_query = history_query
+
+    matching_tasks = filter_history(tasks, history_query, ("title", "actions"))
+    if history_query.strip():
+        matching_responses = filter_history(
+            load_all_responses(), history_query, ("title", "content")
+        )
+        response_page_count = len(matching_responses)
+        max_matching_offset = (
+            ((response_page_count - 1) // RESPONSE_PAGE_SIZE) * RESPONSE_PAGE_SIZE
+            if response_page_count
+            else 0
+        )
+        if response_history_offset > max_matching_offset:
+            response_history_offset = max_matching_offset
+            st.session_state.response_history_offset = response_history_offset
+        matching_responses = paginate_records(
+            matching_responses, RESPONSE_PAGE_SIZE, response_history_offset
+        )
+    else:
+        matching_responses = responses
+        response_page_count = response_count
 
     if tasks or responses:
 
@@ -1821,7 +1846,7 @@ elif st.session_state.page == "History":
                             st.session_state.confirm_delete_response_id = None
                             st.rerun()
 
-    if response_count > RESPONSE_PAGE_SIZE:
+    if response_page_count > RESPONSE_PAGE_SIZE:
 
         previous_col, page_col, next_col = st.columns([1, 2, 1])
 
@@ -1839,17 +1864,18 @@ elif st.session_state.page == "History":
         with page_col:
             current_page = response_history_offset // RESPONSE_PAGE_SIZE + 1
             total_pages = (
-                response_count + RESPONSE_PAGE_SIZE - 1
+                response_page_count + RESPONSE_PAGE_SIZE - 1
             ) // RESPONSE_PAGE_SIZE
             st.caption(
                 f"Page {current_page} of {total_pages} · "
-                f"{response_count} saved responses"
+                f"{response_page_count} "
+                f"{'matching' if history_query.strip() else 'saved'} responses"
             )
 
         with next_col:
             if st.button(
                 "Older →",
-                disabled=response_history_offset + RESPONSE_PAGE_SIZE >= response_count,
+                disabled=response_history_offset + RESPONSE_PAGE_SIZE >= response_page_count,
                 key="response_page_older",
             ):
                 st.session_state.response_history_offset = (

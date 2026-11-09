@@ -17,6 +17,7 @@ from focusmate_core import (
     import_history_json,
     count_response_records,
     load_response_page,
+    paginate_records,
     response_filename,
     task_stats,
     undo_last_completed_action,
@@ -406,6 +407,16 @@ class HistoryImportTests(unittest.TestCase):
                     with self.subTest(limit=limit, offset=offset):
                         with self.assertRaises(ValueError):
                             load_response_page(db, limit, offset)
+
+    def test_paginate_records_returns_requested_slice(self):
+        self.assertEqual(paginate_records(list(range(10)), 3, 3), [3, 4, 5])
+        self.assertEqual(paginate_records(list(range(5)), 10, 0), list(range(5)))
+
+    def test_paginate_records_rejects_invalid_bounds(self):
+        for limit, offset in ((0, 0), (2, -1), (True, 0), (2, False)):
+            with self.subTest(limit=limit, offset=offset):
+                with self.assertRaises(ValueError):
+                    paginate_records([], limit, offset)
 
     def test_rejects_unsupported_versions_and_invalid_step_indexes(self):
         payload = {

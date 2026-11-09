@@ -68,6 +68,15 @@ def load_response_page(connection, limit, offset):
     ).fetchall()
 
 
+def paginate_records(records, limit, offset):
+    if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
+        raise ValueError("Page size must be a positive integer.")
+    if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
+        raise ValueError("Page offset must be a non-negative integer.")
+
+    return list(records[offset:offset + limit])
+
+
 def count_response_records(connection):
     return connection.execute("SELECT COUNT(*) FROM responses").fetchone()[0]
 
