@@ -26,6 +26,7 @@ from focusmate_core import (
     json_load,
     load_response_page,
     open_database,
+    response_filename,
     task_stats,
     undo_last_completed_action,
     valid_completed_actions,
@@ -1162,7 +1163,7 @@ elif st.session_state.page == "History":
                 st.download_button(
                     "Download this response",
                     data=response["content"],
-                    file_name="focusmate_response.md",
+                    file_name=response_filename(response["title"]),
                     mime="text/markdown",
                     key=f"download_response_{response['id']}",
                     use_container_width=True,
@@ -1246,7 +1247,7 @@ if (
     st.download_button(
         "⬇️ Download response (.md)",
         data=st.session_state.last_response,
-        file_name="focusmate_response.md",
+        file_name=response_filename(st.session_state.last_response_title),
         mime="text/markdown",
         key="download_latest_response",
         use_container_width=True,

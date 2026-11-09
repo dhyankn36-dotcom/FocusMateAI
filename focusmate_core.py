@@ -30,6 +30,11 @@ def json_dump(value):
     return json.dumps(value, ensure_ascii=False)
 
 
+def response_filename(title):
+    slug = re.sub(r"[^a-z0-9]+", "-", title.casefold()).strip("-")[:80].strip("-")
+    return f"{slug or 'focusmate-response'}.md"
+
+
 def json_load(value, fallback=None):
     try:
         return json.loads(value)

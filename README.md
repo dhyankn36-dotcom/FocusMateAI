@@ -21,6 +21,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **Task History and Persistence:** Save tasks and responses locally using SQLite.
 - **Searchable History:** Find saved tasks and AI responses by title, step, or content.
 - **Paged Response History:** Browse saved AI responses beyond the latest 50.
+- **Descriptive Downloads:** Save responses using safe filenames based on their titles.
 - **History Backup:** Export saved tasks and AI responses to JSON and import backups up to 5 MB.
 - **History Management:** Delete individual saved tasks and AI responses.
 - **Downloadable Responses:** Download AI-generated responses as text files.

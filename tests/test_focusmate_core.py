@@ -17,6 +17,7 @@ from focusmate_core import (
     import_history_json,
     count_response_records,
     load_response_page,
+    response_filename,
     task_stats,
     undo_last_completed_action,
     valid_completed_actions,
@@ -24,6 +25,19 @@ from focusmate_core import (
 
 
 class JsonHelpersTests(unittest.TestCase):
+    def test_response_filename_uses_safe_title_slug(self):
+        self.assertEqual(
+            response_filename("../../Project Plan: Week 1"),
+            "project-plan-week-1.md",
+        )
+
+    def test_response_filename_falls_back_when_title_has_no_ascii_slug(self):
+        self.assertEqual(response_filename("完成"), "focusmate-response.md")
+
+    def test_response_filename_limits_slug_length(self):
+        filename = response_filename("a" * 100)
+        self.assertEqual(filename, f"{'a' * 80}.md")
+
     def test_ollama_config_uses_defaults(self):
         self.assertEqual(
             get_ollama_config({}),
