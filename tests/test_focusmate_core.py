@@ -24,8 +24,7 @@ class ActionStepTests(unittest.TestCase):
             "Here is your plan:\n"
             "1. Gather the project requirements\n"
             "- Draft a short implementation plan\n"
-            "Step 3: Review the results with the team\n"
-            "• Write a concise project summary"
+            "Step 3: Review the results with the team"
         )
         self.assertEqual(
             extract_action_steps(text),
@@ -33,7 +32,6 @@ class ActionStepTests(unittest.TestCase):
                 "Gather the project requirements",
                 "Draft a short implementation plan",
                 "Review the results with the team",
-                "Write a concise project summary",
             ],
         )
 

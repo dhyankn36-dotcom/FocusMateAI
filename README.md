@@ -79,17 +79,6 @@ python -m streamlit run app.py
 
 Open the local URL displayed in your terminal, usually `http://localhost:8501`.
 
-## Running tests
-
-Run the unit tests and syntax checks from the project root:
-
-```powershell
-python -m unittest discover -s tests -v
-python -m py_compile app.py app_cloud.py focusmate_core.py
-```
-
-GitHub Actions runs these checks for pushes and pull requests targeting `main`.
-
 ## 🔧 Troubleshooting
 
 **Ollama connection error**
