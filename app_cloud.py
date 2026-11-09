@@ -17,6 +17,7 @@ from focusmate_core import (
     count_response_records,
     delete_response_record,
     delete_task_record,
+    duplicate_response_record,
     duplicate_task_record,
     extract_action_steps,
     extract_gemini_content,
@@ -1488,6 +1489,9 @@ elif st.session_state.page == "History":
     st.divider()
     st.markdown("### AI response history")
 
+    if notice := st.session_state.pop("history_notice", None):
+        st.success(notice)
+
     if not response_count:
         st.info("No AI responses saved yet.")
     elif not matching_responses:
@@ -1540,6 +1544,26 @@ elif st.session_state.page == "History":
                             st.rerun()
 
                 st.markdown(response["content"])
+
+                if st.button(
+                    "Duplicate saved response",
+                    key=f"duplicate_response_{response['id']}",
+                ):
+                    with get_db() as db:
+                        duplicate_id = duplicate_response_record(
+                            db,
+                            response["id"],
+                            datetime.now().isoformat(timespec="seconds"),
+                        )
+                    if duplicate_id is None:
+                        st.error("This saved response no longer exists.")
+                    else:
+                        st.session_state.response_history_offset = 0
+                        st.session_state.history_notice = (
+                            "A copy of this response was saved."
+                        )
+                        st.rerun()
+
                 st.download_button(
                     "Download this response",
                     data=response["content"],

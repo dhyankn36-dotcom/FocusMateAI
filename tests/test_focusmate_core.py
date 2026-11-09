@@ -9,6 +9,7 @@ from focusmate_core import (
     build_task_markdown,
     delete_response_record,
     delete_task_record,
+    duplicate_response_record,
     duplicate_task_record,
     extract_action_steps,
     filter_history,
@@ -614,6 +615,45 @@ class HistoryImportTests(unittest.TestCase):
 
             self.assertEqual(response["title"], "Draft")
             self.assertEqual(response["content"], "Edited response")
+
+    def test_duplicate_response_record_preserves_original_and_returns_new_id(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                cursor = db.execute(
+                    """INSERT INTO responses (title, content, created_at)
+                       VALUES (?, ?, ?)""",
+                    (
+                        "Project update",
+                        "Original response text",
+                        "2026-11-09T10:00:00",
+                    ),
+                )
+                original_id = cursor.lastrowid
+
+            with open_database(database_path) as db:
+                duplicate_id = duplicate_response_record(
+                    db, original_id, "2026-11-09T12:00:00"
+                )
+                self.assertIsNotNone(duplicate_id)
+                self.assertIsNone(
+                    duplicate_response_record(
+                        db, 999, "2026-11-09T12:00:00"
+                    )
+                )
+                records = db.execute(
+                    "SELECT id, title, content, created_at FROM responses "
+                    "ORDER BY id"
+                ).fetchall()
+
+            original, duplicate = records
+            self.assertEqual(original["title"], "Project update")
+            self.assertEqual(original["content"], "Original response text")
+            self.assertEqual(duplicate["id"], duplicate_id)
+            self.assertEqual(duplicate["title"], "Project update (copy)")
+            self.assertEqual(duplicate["content"], original["content"])
+            self.assertEqual(duplicate["created_at"], "2026-11-09T12:00:00")
 
     def test_restart_task_record_clears_progress_and_finished_state(self):
         with tempfile.TemporaryDirectory() as temp_dir:

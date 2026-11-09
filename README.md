@@ -31,6 +31,7 @@ Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) 
 - **Task Checklist Downloads:** Export an individual saved task as a Markdown checklist with completion progress.
 - **Saved Task Renaming:** Update a task's title from history without changing its plan or progress.
 - **Saved Response Editing:** Edit saved AI response titles and content from history.
+- **Saved Response Duplication:** Create an independent copy of a saved response before making edits.
 - **Paged Response History:** Browse saved AI responses beyond the latest 50.
 - **Response History Sorting:** Browse saved responses by creation time (newest or oldest) or title, including search results.
 - **Descriptive Downloads:** Save responses using safe filenames based on their titles.

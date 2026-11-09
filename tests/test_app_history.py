@@ -141,21 +141,42 @@ class AppHistoryTests(unittest.TestCase):
                     )
                 )
 
+                app.button(key="duplicate_response_1").click()
+                app.run(timeout=30)
+                if app.exception:
+                    self.fail(f"{app_name} response duplication failed: {app.exception}")
+                self.assertTrue(
+                    any(
+                        "A copy of this response was saved." in item.value
+                        for item in app.success
+                    )
+                )
+
                 db = sqlite3.connect(temp_path / "focusmate.db")
                 try:
                     task = db.execute(
                         "SELECT title FROM tasks WHERE id = 1"
                     ).fetchone()
-                    response = db.execute(
+                    responses = db.execute(
                         "SELECT title, content FROM responses WHERE id = 1"
+                    ).fetchone(), db.execute(
+                        "SELECT title, content FROM responses WHERE id = 2"
                     ).fetchone()
                 finally:
                     db.close()
 
                 self.assertEqual(task[0], "Updated history test task")
-                self.assertEqual(response[0], "Updated history test response")
                 self.assertEqual(
-                    response[1], "Edited history test response content."
+                    responses[0][0], "Updated history test response"
+                )
+                self.assertEqual(
+                    responses[0][1], "Edited history test response content."
+                )
+                self.assertEqual(
+                    responses[1][0], "Updated history test response (copy)"
+                )
+                self.assertEqual(
+                    responses[1][1], "Edited history test response content."
                 )
 
 

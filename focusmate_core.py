@@ -148,6 +148,15 @@ def delete_response_record(connection, response_id):
     ).rowcount
 
 
+def duplicate_response_record(connection, response_id, created_at):
+    cursor = connection.execute(
+        """INSERT INTO responses (title, content, created_at)
+           SELECT title || ' (copy)', content, ? FROM responses WHERE id = ?""",
+        (created_at, response_id),
+    )
+    return cursor.lastrowid if cursor.rowcount else None
+
+
 def rename_response_record(connection, response_id, title):
     return connection.execute(
         "UPDATE responses SET title = ? WHERE id = ?", (title, response_id)
