@@ -23,6 +23,7 @@ from focusmate_core import (
     extract_action_steps,
     extract_ollama_content,
     extract_ollama_error,
+    filter_records_by_date,
     filter_tasks_by_status,
     find_resumable_task,
     filter_history,
@@ -1674,6 +1675,19 @@ elif st.session_state.page == "History":
         ("All tasks", "In progress", "Completed"),
         key="task_history_status",
     )
+    date_col, end_date_col = st.columns(2)
+    with date_col:
+        history_start_date = st.date_input(
+            "Created on or after",
+            value=None,
+            key="history_start_date",
+        )
+    with end_date_col:
+        history_end_date = st.date_input(
+            "Created on or before",
+            value=None,
+            key="history_end_date",
+        )
     task_order = st.selectbox(
         "Sort tasks",
         ("Newest first", "Oldest first", "Title A-Z"),
@@ -1692,6 +1706,16 @@ elif st.session_state.page == "History":
         st.session_state.response_history_offset = 0
         st.session_state.task_history_offset = 0
         st.session_state.response_history_query = history_query
+    response_filter = (
+        history_query,
+        history_start_date,
+        history_end_date,
+        response_order,
+    )
+    if st.session_state.get("response_history_filter") != response_filter:
+        response_history_offset = 0
+        st.session_state.response_history_offset = 0
+        st.session_state.response_history_filter = response_filter
     previous_response_order = st.session_state.get(
         "previous_response_history_order", response_order
     )
@@ -1700,22 +1724,47 @@ elif st.session_state.page == "History":
         st.session_state.response_history_offset = 0
         st.session_state.previous_response_history_order = response_order
 
-    task_filter = (history_query, task_status, task_order)
+    task_filter = (
+        history_query,
+        task_status,
+        task_order,
+        history_start_date,
+        history_end_date,
+    )
     if st.session_state.get("task_history_filter") != task_filter:
         st.session_state.task_history_offset = 0
         st.session_state.task_history_filter = task_filter
 
-    matching_tasks = sort_task_records(
-        filter_tasks_by_status(
-            filter_history(tasks, history_query, ("title", "actions")),
-            task_status,
-        ),
-        task_order,
+    date_range_valid = (
+        history_start_date is None
+        or history_end_date is None
+        or history_start_date <= history_end_date
     )
+    if not date_range_valid:
+        st.warning("The start date must be on or before the end date.")
+    if date_range_valid:
+        matching_tasks = sort_task_records(
+            filter_records_by_date(
+                filter_tasks_by_status(
+                    filter_history(tasks, history_query, ("title", "actions")),
+                    task_status,
+                ),
+                history_start_date,
+                history_end_date,
+            ),
+            task_order,
+        )
+    else:
+        matching_tasks = []
     matching_tasks_for_export = matching_tasks
     task_count_label = (
         "matching"
-        if history_query.strip() or task_status != "All tasks"
+        if (
+            history_query.strip()
+            or task_status != "All tasks"
+            or history_start_date is not None
+            or history_end_date is not None
+        )
         else "saved"
     )
     task_history_offset = st.session_state.get("task_history_offset", 0)
@@ -1731,10 +1780,20 @@ elif st.session_state.page == "History":
     matching_tasks = paginate_records(
         matching_tasks, TASK_PAGE_SIZE, task_history_offset
     )
-    if history_query.strip():
+    if (
+        history_query.strip()
+        or history_start_date is not None
+        or history_end_date is not None
+    ):
         matching_responses = filter_history(
             load_all_responses(), history_query, ("title", "content")
         )
+        if date_range_valid:
+            matching_responses = filter_records_by_date(
+                matching_responses, history_start_date, history_end_date
+            )
+        else:
+            matching_responses = []
         matching_responses = sort_response_records(
             matching_responses, response_order
         )
@@ -1768,9 +1827,19 @@ elif st.session_state.page == "History":
             use_container_width=True,
         )
 
-    if history_query.strip() or task_status != "All tasks":
+    if (
+        history_query.strip()
+        or task_status != "All tasks"
+        or history_start_date is not None
+        or history_end_date is not None
+    ):
         if matching_responses_for_export is None:
-            matching_responses_for_export = load_all_responses()
+            if date_range_valid:
+                matching_responses_for_export = filter_records_by_date(
+                    load_all_responses(), history_start_date, history_end_date
+                )
+            else:
+                matching_responses_for_export = []
         st.download_button(
             "⬇️ Download matching history (.json)",
             data=build_history_export(
@@ -1788,7 +1857,7 @@ elif st.session_state.page == "History":
         st.info("No tasks saved yet.")
 
     elif not matching_tasks:
-        st.info("No saved tasks match your search and status filter.")
+        st.info("No saved tasks match the selected history filters.")
 
     else:
 

@@ -3,6 +3,7 @@ import os
 import re
 import sqlite3
 from contextlib import contextmanager
+from datetime import date, datetime
 from urllib.parse import urlparse
 
 MAX_TASK_INPUT_CHARS = 2_000
@@ -290,6 +291,26 @@ def filter_history(records, query, fields):
             if record[field] is not None
         )
     ]
+
+
+def filter_records_by_date(records, start_date=None, end_date=None):
+    if start_date is not None and end_date is not None and start_date > end_date:
+        raise ValueError("Start date must be on or before end date.")
+    if start_date is None and end_date is None:
+        return list(records)
+
+    matching_records = []
+    for record in records:
+        try:
+            created_date = datetime.fromisoformat(record["created_at"]).date()
+        except (KeyError, TypeError, ValueError):
+            continue
+        if start_date is not None and created_date < start_date:
+            continue
+        if end_date is not None and created_date > end_date:
+            continue
+        matching_records.append(record)
+    return matching_records
 
 
 def filter_tasks_by_status(tasks, status):

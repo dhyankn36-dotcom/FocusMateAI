@@ -1,6 +1,7 @@
 import sqlite3
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 from focusmate_core import (
@@ -10,6 +11,7 @@ from focusmate_core import (
     delete_task_record,
     extract_action_steps,
     filter_history,
+    filter_records_by_date,
     filter_tasks_by_status,
     find_resumable_task,
     get_ollama_config,
@@ -229,6 +231,37 @@ class JsonHelpersTests(unittest.TestCase):
     def test_filter_history_returns_no_records_when_query_does_not_match(self):
         records = [{"title": "First"}, {"title": "Second"}]
         self.assertEqual(filter_history(records, "missing", ("title",)), [])
+
+    def test_filter_records_by_date_includes_both_boundary_days(self):
+        records = [
+            {"id": 1, "created_at": "2026-11-08T23:59:59"},
+            {"id": 2, "created_at": "2026-11-09T12:00:00"},
+            {"id": 3, "created_at": "2026-11-10T00:00:00"},
+            {"id": 4, "created_at": "invalid"},
+        ]
+
+        self.assertEqual(
+            [record["id"] for record in filter_records_by_date(
+                records, date(2026, 11, 9), date(2026, 11, 9)
+            )],
+            [2],
+        )
+        self.assertEqual(
+            [record["id"] for record in filter_records_by_date(
+                records, end_date=date(2026, 11, 8)
+            )],
+            [1],
+        )
+
+    def test_filter_records_by_date_returns_all_without_bounds(self):
+        records = [{"created_at": "not-a-date"}, {"title": "legacy"}]
+        self.assertEqual(filter_records_by_date(records), records)
+
+    def test_filter_records_by_date_rejects_reversed_range(self):
+        with self.assertRaisesRegex(ValueError, "on or before"):
+            filter_records_by_date(
+                [], date(2026, 11, 10), date(2026, 11, 9)
+            )
 
     def test_filter_tasks_by_status_returns_all_and_matching_tasks(self):
         tasks = [
