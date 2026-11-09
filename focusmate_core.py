@@ -261,6 +261,16 @@ def filter_history(records, query, fields):
     ]
 
 
+def filter_tasks_by_status(tasks, status):
+    if status == "All tasks":
+        return list(tasks)
+    if status not in {"In progress", "Completed"}:
+        raise ValueError("Task status must be All tasks, In progress, or Completed.")
+
+    finished = status == "Completed"
+    return [task for task in tasks if bool(task["finished"]) is finished]
+
+
 def valid_completed_actions(actions, completed):
     if not isinstance(actions, list) or not isinstance(completed, list):
         return []

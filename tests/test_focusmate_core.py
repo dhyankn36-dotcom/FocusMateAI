@@ -9,6 +9,7 @@ from focusmate_core import (
     delete_task_record,
     extract_action_steps,
     filter_history,
+    filter_tasks_by_status,
     find_resumable_task,
     get_ollama_config,
     json_dump,
@@ -133,6 +134,27 @@ class JsonHelpersTests(unittest.TestCase):
     def test_filter_history_returns_no_records_when_query_does_not_match(self):
         records = [{"title": "First"}, {"title": "Second"}]
         self.assertEqual(filter_history(records, "missing", ("title",)), [])
+
+    def test_filter_tasks_by_status_returns_all_and_matching_tasks(self):
+        tasks = [
+            {"id": 1, "finished": 0},
+            {"id": 2, "finished": 1},
+            {"id": 3, "finished": 0},
+        ]
+
+        self.assertEqual(filter_tasks_by_status(tasks, "All tasks"), tasks)
+        self.assertEqual(
+            [task["id"] for task in filter_tasks_by_status(tasks, "In progress")],
+            [1, 3],
+        )
+        self.assertEqual(
+            [task["id"] for task in filter_tasks_by_status(tasks, "Completed")],
+            [2],
+        )
+
+    def test_filter_tasks_by_status_rejects_unknown_status(self):
+        with self.assertRaisesRegex(ValueError, "Task status"):
+            filter_tasks_by_status([], "Archived")
 
     def test_undo_last_completed_action_removes_highest_step_index(self):
         self.assertEqual(undo_last_completed_action([0, 1, 2]), [0, 1])

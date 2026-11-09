@@ -22,6 +22,7 @@ from focusmate_core import (
     extract_action_steps,
     extract_ollama_content,
     extract_ollama_error,
+    filter_tasks_by_status,
     find_resumable_task,
     filter_history,
     get_ollama_config,
@@ -1664,6 +1665,11 @@ elif st.session_state.page == "History":
         placeholder="Search titles, content, or task steps...",
         key="history_search",
     )
+    task_status = st.selectbox(
+        "Task status",
+        ("All tasks", "In progress", "Completed"),
+        key="task_history_status",
+    )
     previous_response_query = st.session_state.get(
         "response_history_query", ""
     )
@@ -1673,7 +1679,15 @@ elif st.session_state.page == "History":
         st.session_state.task_history_offset = 0
         st.session_state.response_history_query = history_query
 
-    matching_tasks = filter_history(tasks, history_query, ("title", "actions"))
+    task_filter = (history_query, task_status)
+    if st.session_state.get("task_history_filter") != task_filter:
+        st.session_state.task_history_offset = 0
+        st.session_state.task_history_filter = task_filter
+
+    matching_tasks = filter_tasks_by_status(
+        filter_history(tasks, history_query, ("title", "actions")),
+        task_status,
+    )
     task_history_offset = st.session_state.get("task_history_offset", 0)
     task_page_count = len(matching_tasks)
     max_task_offset = (
@@ -1724,8 +1738,7 @@ elif st.session_state.page == "History":
         st.info("No tasks saved yet.")
 
     elif not matching_tasks:
-
-        st.info("No saved tasks match your search.")
+        st.info("No saved tasks match your search and status filter.")
 
     else:
 
