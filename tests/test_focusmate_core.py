@@ -15,6 +15,8 @@ from focusmate_core import (
     json_load,
     open_database,
     import_history_json,
+    count_response_records,
+    load_response_page,
     task_stats,
     undo_last_completed_action,
     valid_completed_actions,
@@ -355,6 +357,41 @@ class HistoryImportTests(unittest.TestCase):
                     db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0],
                     0,
                 )
+
+    def test_response_pages_are_newest_first_and_count_all_records(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                db.executemany(
+                    "INSERT INTO responses (title, content, created_at) "
+                    "VALUES (?, ?, ?)",
+                    [
+                        (f"Response {index}", "content", "2026-11-09")
+                        for index in range(1, 61)
+                    ],
+                )
+                self.assertEqual(count_response_records(db), 60)
+                self.assertEqual(
+                    [row["title"] for row in load_response_page(db, 50, 0)][:2],
+                    ["Response 60", "Response 59"],
+                )
+                self.assertEqual(
+                    [row["title"] for row in load_response_page(db, 50, 50)],
+                    ["Response 10", "Response 9", "Response 8", "Response 7",
+                     "Response 6", "Response 5", "Response 4", "Response 3",
+                     "Response 2", "Response 1"],
+                )
+
+    def test_response_page_rejects_invalid_limit_and_offset(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+            with open_database(database_path) as db:
+                for limit, offset in ((0, 0), (True, 0), (10, -1), (10, False)):
+                    with self.subTest(limit=limit, offset=offset):
+                        with self.assertRaises(ValueError):
+                            load_response_page(db, limit, offset)
 
     def test_rejects_unsupported_versions_and_invalid_step_indexes(self):
         payload = {

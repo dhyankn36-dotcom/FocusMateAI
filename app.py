@@ -16,6 +16,7 @@ from focusmate_core import (
     MAX_SIMPLIFY_INPUT_CHARS,
     MAX_TASK_INPUT_CHARS,
     build_history_export,
+    count_response_records,
     delete_response_record,
     delete_task_record,
     extract_action_steps,
@@ -27,6 +28,7 @@ from focusmate_core import (
     import_history_json,
     json_dump,
     json_load,
+    load_response_page,
     open_database,
     task_stats,
     undo_last_completed_action,
@@ -208,13 +210,19 @@ def load_tasks():
 
         ).fetchall()
 
-def load_responses():
+RESPONSE_PAGE_SIZE = 50
+
+def load_responses(offset):
 
     with get_db() as db:
 
-        return db.execute(
-            "SELECT * FROM responses ORDER BY id DESC LIMIT 50"
-        ).fetchall()
+        return load_response_page(db, RESPONSE_PAGE_SIZE, offset)
+
+def count_responses():
+
+    with get_db() as db:
+
+        return count_response_records(db)
 
 def load_all_responses():
 
@@ -913,7 +921,17 @@ with st.sidebar:
 
 tasks = load_tasks()
 
-responses = load_responses()
+response_count = count_responses()
+response_history_offset = st.session_state.get("response_history_offset", 0)
+max_response_offset = (
+    ((response_count - 1) // RESPONSE_PAGE_SIZE) * RESPONSE_PAGE_SIZE
+    if response_count
+    else 0
+)
+if response_history_offset > max_response_offset:
+    response_history_offset = max_response_offset
+    st.session_state.response_history_offset = response_history_offset
+responses = load_responses(response_history_offset)
 
 # ============================================================
 
@@ -1801,6 +1819,42 @@ elif st.session_state.page == "History":
                         ):
                             st.session_state.confirm_delete_response_id = None
                             st.rerun()
+
+    if response_count > RESPONSE_PAGE_SIZE:
+
+        previous_col, page_col, next_col = st.columns([1, 2, 1])
+
+        with previous_col:
+            if st.button(
+                "← Newer",
+                disabled=response_history_offset == 0,
+                key="response_page_newer",
+            ):
+                st.session_state.response_history_offset = max(
+                    0, response_history_offset - RESPONSE_PAGE_SIZE
+                )
+                st.rerun()
+
+        with page_col:
+            current_page = response_history_offset // RESPONSE_PAGE_SIZE + 1
+            total_pages = (
+                response_count + RESPONSE_PAGE_SIZE - 1
+            ) // RESPONSE_PAGE_SIZE
+            st.caption(
+                f"Page {current_page} of {total_pages} · "
+                f"{response_count} saved responses"
+            )
+
+        with next_col:
+            if st.button(
+                "Older →",
+                disabled=response_history_offset + RESPONSE_PAGE_SIZE >= response_count,
+                key="response_page_older",
+            ):
+                st.session_state.response_history_offset = (
+                    response_history_offset + RESPONSE_PAGE_SIZE
+                )
+                st.rerun()
 
 # ============================================================
 
