@@ -5,6 +5,7 @@ from pathlib import Path
 
 import requests
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
 from focusmate_core import (
     MAX_MESSAGE_PURPOSE_CHARS,
     MAX_RECIPIENT_CHARS,
@@ -412,7 +413,7 @@ def ask_ollama(prompt, system_prompt=None):
 
     try:
         api_key = st.secrets.get("GEMINI_API_KEY", "")
-    except Exception:
+    except StreamlitSecretNotFoundError:
         api_key = ""
 
     if not api_key:
