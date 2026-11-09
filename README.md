@@ -81,6 +81,14 @@ Make sure Ollama is installed and running.
 ollama pull llama3.2
 ```
 
+The local app defaults to `http://localhost:11434/api/chat` and the `llama3.2` model. To choose another Ollama-compatible server or installed model, set optional environment variables before starting Streamlit:
+
+```powershell
+$env:FOCUSMATE_OLLAMA_URL = "http://localhost:11434/api/chat"
+$env:FOCUSMATE_OLLAMA_MODEL = "llama3.2"
+python -m streamlit run app.py
+```
+
 ### 5. Run the application
 
 ```powershell

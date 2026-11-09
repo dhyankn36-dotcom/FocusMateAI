@@ -23,6 +23,7 @@ from focusmate_core import (
     extract_ollama_error,
     find_resumable_task,
     filter_history,
+    get_ollama_config,
     import_history_json,
     json_dump,
     json_load,
@@ -50,9 +51,7 @@ st.set_page_config(
 
 )
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-
-MODEL_NAME = "llama3.2"
+OLLAMA_URL, MODEL_NAME = get_ollama_config()
 
 DB_PATH = Path(__file__).resolve().parent / "focusmate.db"
 

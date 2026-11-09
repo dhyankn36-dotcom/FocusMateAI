@@ -10,6 +10,7 @@ from focusmate_core import (
     extract_action_steps,
     filter_history,
     find_resumable_task,
+    get_ollama_config,
     json_dump,
     json_load,
     open_database,
@@ -21,6 +22,33 @@ from focusmate_core import (
 
 
 class JsonHelpersTests(unittest.TestCase):
+    def test_ollama_config_uses_defaults(self):
+        self.assertEqual(
+            get_ollama_config({}),
+            ("http://localhost:11434/api/chat", "llama3.2"),
+        )
+
+    def test_ollama_config_accepts_custom_server_and_model(self):
+        self.assertEqual(
+            get_ollama_config(
+                {
+                    "FOCUSMATE_OLLAMA_URL": "https://ai.example.test/api/chat",
+                    "FOCUSMATE_OLLAMA_MODEL": "custom-model",
+                }
+            ),
+            ("https://ai.example.test/api/chat", "custom-model"),
+        )
+
+    def test_ollama_config_rejects_invalid_server_urls(self):
+        for url in ("", "localhost:11434", "ftp://example.test/api"):
+            with self.subTest(url=url):
+                with self.assertRaisesRegex(ValueError, "HTTP or HTTPS"):
+                    get_ollama_config({"FOCUSMATE_OLLAMA_URL": url})
+
+    def test_ollama_config_rejects_empty_model(self):
+        with self.assertRaisesRegex(ValueError, "must not be empty"):
+            get_ollama_config({"FOCUSMATE_OLLAMA_MODEL": "  "})
+
     def test_json_dump_preserves_non_ascii_text(self):
         self.assertEqual(json_dump(["完成"]), '["完成"]')
 

@@ -1,13 +1,29 @@
 import json
+import os
 import re
 import sqlite3
 from contextlib import contextmanager
+from urllib.parse import urlparse
 
 MAX_TASK_INPUT_CHARS = 2_000
 MAX_SIMPLIFY_INPUT_CHARS = 10_000
 MAX_RECIPIENT_CHARS = 120
 MAX_MESSAGE_PURPOSE_CHARS = 3_000
 MAX_HISTORY_IMPORT_BYTES = 5_000_000
+
+
+def get_ollama_config(environ=None):
+    settings = os.environ if environ is None else environ
+    url = settings.get(
+        "FOCUSMATE_OLLAMA_URL", "http://localhost:11434/api/chat"
+    ).strip()
+    model = settings.get("FOCUSMATE_OLLAMA_MODEL", "llama3.2").strip()
+    parsed_url = urlparse(url)
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+        raise ValueError("FOCUSMATE_OLLAMA_URL must be an HTTP or HTTPS URL.")
+    if not model:
+        raise ValueError("FOCUSMATE_OLLAMA_MODEL must not be empty.")
+    return url, model
 
 
 def json_dump(value):
