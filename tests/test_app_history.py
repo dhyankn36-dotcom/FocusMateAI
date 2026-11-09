@@ -8,6 +8,79 @@ from streamlit.testing.v1 import AppTest
 
 
 class AppHistoryTests(unittest.TestCase):
+    def test_pagination_recovers_after_deleting_last_page_items(self):
+        repository_root = Path(__file__).resolve().parents[1]
+
+        for app_name in ("app.py", "app_cloud.py"):
+            with self.subTest(app=app_name), tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
+                shutil.copy2(repository_root / app_name, temp_path / app_name)
+                shutil.copy2(
+                    repository_root / "focusmate_core.py",
+                    temp_path / "focusmate_core.py",
+                )
+
+                app = AppTest.from_file(str(temp_path / app_name)).run(timeout=30)
+                if app.exception:
+                    self.fail(f"{app_name} startup failed: {app.exception}")
+
+                app.session_state["page"] = "History"
+                app.run(timeout=30)
+
+                db = sqlite3.connect(temp_path / "focusmate.db")
+                try:
+                    db.executemany(
+                        """INSERT INTO tasks
+                           (title, actions, completed, finished, created_at)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        [
+                            (
+                                f"Task {index}",
+                                '["Action"]',
+                                "[]",
+                                0,
+                                "2026-11-09T10:00:00",
+                            )
+                            for index in range(21)
+                        ],
+                    )
+                    db.executemany(
+                        """INSERT INTO responses (title, content, created_at)
+                           VALUES (?, ?, ?)""",
+                        [
+                            (
+                                f"Response {index}",
+                                f"Content {index}",
+                                "2026-11-09T10:00:00",
+                            )
+                            for index in range(51)
+                        ],
+                    )
+                    db.commit()
+                finally:
+                    db.close()
+
+                app.session_state["page"] = "History"
+                app.session_state["task_history_offset"] = 20
+                app.session_state["response_history_offset"] = 50
+                app.run(timeout=30)
+                if app.exception:
+                    self.fail(f"{app_name} paginated history failed: {app.exception}")
+
+                app.button(key="delete_task_1").click()
+                app.run(timeout=30)
+                app.button(key="confirm_delete_task_1").click()
+                app.run(timeout=30)
+                self.assertEqual(app.session_state["task_history_offset"], 0)
+
+                app.button(key="delete_response_1").click()
+                app.run(timeout=30)
+                app.button(key="confirm_delete_response_1").click()
+                app.run(timeout=30)
+                self.assertEqual(app.session_state["response_history_offset"], 0)
+                if app.exception:
+                    self.fail(f"{app_name} deletion recovery failed: {app.exception}")
+
     def test_history_editors_render_and_persist_changes_in_both_apps(self):
         repository_root = Path(__file__).resolve().parents[1]
 
