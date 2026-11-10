@@ -1,73 +1,115 @@
-# FocusMate AI 🧠
+# FocusMate AI
 
-**Your personal AI-powered cognitive co-pilot for planning, understanding, and communication.**
+<div align="center">
 
-FocusMate AI is a Python-based productivity application designed to make everyday tasks easier to manage. It can use a locally running model or a hosted AI backend to break complex tasks into actionable steps, simplify difficult text, and draft clear messages through an interactive Streamlit dashboard.
+### Your AI-powered workspace for planning, focus, and communication
 
-Run [app.py](./app.py) with local Ollama, or use [app_cloud.py](./app_cloud.py) with the hosted Gemini API.
+Turn complex tasks into manageable actions, simplify difficult text, and draft clear messages with an interactive Streamlit application.
 
-## ✨ Features
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Ollama](https://img.shields.io/badge/Local_AI-Ollama-111111?logoColor=white)](https://ollama.com/)
+[![SQLite](https://img.shields.io/badge/Storage-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 
-- **AI Task Planner:** Break large tasks into manageable, actionable steps.
-- **Text Simplifier:** Make difficult information easier to understand.
-- **Message Writer:** Generate clear, editable messages.
-- **One-Step Mode:** Focus on one action at a time.
-- **Personalization:** Adjust response length and language style.
-- **Input Limits:** Keep AI requests responsive with clear per-tool text limits.
-- **Task Progress Tracking:** Track completed actions and monitor progress.
-- **Progress Overview:** See active tasks, finished tasks, and remaining actions at a glance.
-- **Quick Resume:** Continue the latest unfinished task from the dashboard.
-- **Flexible Progress:** Undo the last completed step while using one-step mode.
-- **Task History and Persistence:** Save tasks and responses locally using SQLite.
-- **Searchable History:** Find saved tasks and AI responses across all pages by title, step, or content.
-- **Paged Task History:** Browse saved tasks in smaller pages, with search results paginated across the full history.
-- **Task Status Filters:** Narrow saved tasks to in-progress or completed plans, based on both completion status and checked actions.
-- **History Date Filters:** Narrow tasks and responses to a creation-date range; filters also apply to matching-history exports.
-- **History Filter Reset:** Clear search, status, date, and sorting options in one action.
-- **Task History Sorting:** Order saved tasks by creation time (newest or oldest) or title.
-- **History Quick Resume:** Resume an unfinished saved task directly from filtered task history.
-- **Restart Completed Tasks:** Restart a completed plan after confirming the progress reset, without recreating the task.
-- **Duplicate Saved Tasks:** Create a fresh plan from any saved task while preserving the original and its progress.
-- **Task Checklist Downloads:** Export an individual saved task as a Markdown checklist with completion progress.
-- **Saved Task Renaming:** Update a task's title from history without changing its plan or progress.
-- **Saved Response Editing:** Edit saved AI response titles and content from history.
-- **Saved Response Duplication:** Create an independent copy of a saved response before making edits.
-- **Paged Response History:** Browse saved AI responses beyond the latest 50.
-- **Response History Sorting:** Browse saved responses by creation time (newest or oldest) or title, including search results.
-- **Descriptive Downloads:** Save responses using safe filenames based on their titles.
-- **History Backup:** Export saved tasks and AI responses to JSON and import backups up to 5 MB.
-- **Filtered History Export:** Download all search and task-status matches as JSON without limiting the export to the visible page.
-- **History Management:** Delete individual saved tasks and AI responses.
-- **Downloadable Responses:** Download AI-generated responses as text files.
-- **Local AI:** Run language generation locally through Ollama and Llama 3.2.
+</div>
 
-## 🛠️ Technology Stack
+---
 
-| Technology | Purpose |
+## Overview
+
+FocusMate AI is a Python productivity application that helps users organize work and move from a broad request to a clear next action. It provides task planning, one-step guidance, text simplification, message drafting, progress tracking, and searchable local history.
+
+The repository contains two application variants:
+
+| Entry point | AI provider | Intended use |
+|---|---|---|
+| `app.py` | Local Ollama model (Llama 3.2 by default) | Run AI requests locally on your machine |
+| `app_cloud.py` | Google Gemini API | Run with a configured hosted AI API key |
+
+## Features
+
+### AI productivity tools
+- **Task planner:** Convert assignments, projects, and goals into actionable steps.
+- **One-step mode:** Work through a plan one action at a time.
+- **Text simplifier:** Rewrite difficult information in easier-to-understand language.
+- **Message writer:** Draft clear messages that can be reviewed and edited.
+
+### Planning and progress
+- Track completed actions and remaining steps.
+- View active and completed tasks in a progress overview.
+- Resume the latest unfinished task.
+- Undo the most recent completed step in one-step mode.
+- Restart completed plans after confirming a progress reset.
+- Duplicate saved plans without changing the original.
+
+### History and data management
+- Persist tasks and responses in SQLite.
+- Search saved content by title, step, or response text.
+- Filter task history by status and date range.
+- Sort task and response history by title or creation time.
+- Paginate task and response history.
+- Rename saved tasks and edit saved response titles and content.
+- Duplicate saved responses before editing.
+- Export an individual task as a Markdown checklist.
+- Download generated responses as text files with descriptive filenames.
+- Back up and restore task and response history using JSON.
+- Export all matching filtered history, not only the visible page.
+
+### Personalization and usability
+- Adjust response length and language style.
+- Apply input limits to keep requests manageable.
+- Clear history filters in one action.
+- Delete individual saved tasks and responses.
+
+## Technology Stack
+
+| Technology | Role |
 |---|---|
 | Python | Application logic |
-| Streamlit | Interactive web interface |
-| Ollama | Local language model runtime |
-| Llama 3.2 | AI-powered text generation |
-| Google Gemini API | Hosted AI backend used by `app_cloud.py` |
-| SQLite | Local task and response storage |
+| Streamlit | Interactive user interface |
+| Ollama | Local model runtime |
+| Llama 3.2 | Default local language model |
+| Google Gemini API | Hosted model provider for `app_cloud.py` |
+| SQLite | Local task and response persistence |
+| unittest | Automated test framework |
 
-## 🏗️ How It Works
+## Application Flow
 
-1. The user selects a tool and enters a task, text, or message request.
-2. FocusMate AI sends the input to the configured AI backend: local Ollama in `app.py` or Google Gemini in `app_cloud.py`.
-3. The selected model generates a response.
-4. The application displays the result and saves relevant information locally.
-5. Users can revisit saved tasks, track progress, and download responses.
+```text
+       USER INPUT
+           |
+           v
+    SELECT A PRODUCTIVITY TOOL
+      /        |        \
+     v         v         v
+  PLANNER  SIMPLIFIER  WRITER
+      \        |        /
+       v       v       v
+       CONFIGURED AI PROVIDER
+          /           \
+         v             v
+      OLLAMA         GEMINI API
+         \             /
+          v           v
+         GENERATED RESPONSE
+                 |
+        +--------+---------+
+        |                  |
+        v                  v
+   REVIEW / EDIT       SAVE TO SQLITE
+        |                  |
+        v                  v
+  TAKE NEXT ACTION     HISTORY / EXPORT
+```
 
-## 📋 Prerequisites
+## Run Locally
+
+### Prerequisites
 
 - Python 3.10 or newer
-- [Ollama](https://ollama.com/) installed
-- The Llama 3.2 model downloaded through Ollama
-- Git, if cloning the repository
-
-## 🚀 Installation and Setup
+- [Ollama](https://ollama.com/) installed and running
+- Llama 3.2 downloaded in Ollama
+- Git (to clone the repository)
 
 ### 1. Clone the repository
 
@@ -76,7 +118,7 @@ git clone https://github.com/dhyankn36-dotcom/FocusMateAI.git
 cd FocusMateAI
 ```
 
-### 2. Create a virtual environment
+### 2. Create and activate a virtual environment
 
 ```powershell
 python -m venv .venv
@@ -89,85 +131,73 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-### 4. Download the AI model
-
-Make sure Ollama is installed and running.
+### 4. Download the local model
 
 ```powershell
 ollama pull llama3.2
 ```
 
-The local app defaults to `http://localhost:11434/api/chat` and the `llama3.2` model. To choose another Ollama-compatible server or installed model, set optional environment variables before starting Streamlit:
+The local app uses the Ollama chat endpoint `http://localhost:11434/api/chat` and model `llama3.2` by default. Optional environment variables allow you to change these values:
 
 ```powershell
 $env:FOCUSMATE_OLLAMA_URL = "http://localhost:11434/api/chat"
 $env:FOCUSMATE_OLLAMA_MODEL = "llama3.2"
-python -m streamlit run app.py
 ```
 
-### 5. Run the application
+### 5. Start the application
 
 ```powershell
 python -m streamlit run app.py
 ```
 
-Open the local URL displayed in your terminal, usually `http://localhost:8501`.
+Open the local address shown by Streamlit, usually [http://localhost:8501](http://localhost:8501).
 
-## 🧪 Running Tests
+## Run the Hosted Gemini Variant
 
-With the project dependencies installed, run the unit and Streamlit UI tests from the repository root:
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-The suite covers shared task/history logic and exercises saved-history editing in both app variants. GitHub Actions runs it on Python 3.10 and 3.12.
-
-## Hosted Gemini variant
-
-To run `app_cloud.py`, configure `GEMINI_API_KEY` in your Streamlit deployment's **Settings → Secrets**:
+The alternate entry point is `app_cloud.py`. Configure `GEMINI_API_KEY` in your Streamlit deployment's **Settings → Secrets**:
 
 ```toml
 GEMINI_API_KEY = "your-gemini-api-key"
 ```
 
-Keep the key in deployment secrets; do not commit it to the repository. This variant sends prompts to Google's Gemini API, unlike the local Ollama app. Its SQLite database is stored on the deployment filesystem, which may be ephemeral; use a persistent database before relying on hosted task history across restarts.
+Then launch `app_cloud.py` in the deployment configuration.
 
-## 🔧 Troubleshooting
+**Keep API keys in environment variables or deployment secrets. Never commit real credentials.** The hosted variant sends prompts to Google's Gemini API. Its SQLite data is stored on the deployment filesystem, which may be ephemeral; configure persistent storage before relying on history across restarts.
 
-**Ollama connection error**
-- Check that Ollama is installed and running.
-- Run `ollama list` to verify that Llama 3.2 is available.
-- Check that the application can reach the configured Ollama endpoint.
+## Tests
 
-**Gemini API key is missing**
-- Add `GEMINI_API_KEY` to the hosted app's Streamlit secrets and restart the app.
+Run the test suite from the repository root with the project dependencies installed:
 
-**Python dependency errors**
-- Activate the virtual environment.
-- Run `python -m pip install -r requirements.txt`.
+```powershell
+python -m unittest discover -s tests -v
+```
 
-**Model not found**
-- Run `ollama pull llama3.2` and retry.
+The suite covers shared task/history behavior and saved-history editing across both application variants. GitHub Actions is configured to run tests on Python 3.10 and 3.12.
 
-## 🔒 Privacy and Limitations
+## Privacy and Responsible Use
 
-FocusMate AI is a productivity aid, not a diagnostic or medical tool.
+- The local variant sends prompts to the Ollama service configured on your machine.
+- The hosted variant sends prompts to Google's Gemini API.
+- Task history is stored in SQLite; protect the database and your device.
+- Local model execution does not by itself guarantee complete privacy or security.
+- AI-generated output can be incorrect or incomplete. Review responses before using them for important work.
 
-The local app processes prompts through Ollama on your machine. The hosted Gemini variant sends prompts to Google's API. Protect your device, API credentials, and stored data; local processing alone does not guarantee complete privacy.
+## Potential Improvements
 
-AI-generated responses may contain errors or omissions. Review the output before relying on it for important decisions.
+- Persistent database storage for hosted deployments.
+- More AI provider options and configurable model settings.
+- Expanded accessibility and personalization controls.
 
-## 🗺️ Future Improvements
+## License
 
-Potential improvements include:
-- Using a persistent database for hosted deployments
-- Additional personalization and accessibility options
-
-## 📄 License
-
-No open-source license has been selected yet. Until a license is added, reuse and redistribution permissions should not be assumed.
+No open-source license has been selected in this repository. Until a license is added, permissions to reuse or redistribute this project should not be assumed.
 
 ---
 
-**Built with Python and Streamlit; supports local Ollama and hosted Gemini.**
+<div align="center">
+
+Built with Python, Streamlit, and AI.
+
+**[GitHub Profile](https://github.com/dhyankn36-dotcom)**
+
+</div>
