@@ -2,7 +2,7 @@ import html
 
 import textwrap
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from pathlib import Path
 
@@ -18,6 +18,7 @@ from focusmate_core import (
     build_history_export,
     build_task_markdown,
     count_response_records,
+    count_tasks_created_since,
     delete_response_record,
     delete_task_record,
     duplicate_response_record,
@@ -990,12 +991,17 @@ if st.session_state.page == "Dashboard":
 
     st.markdown("### 📊 Your overview")
 
-    m1, m2, m3, m4, m5 = st.columns(5)
+    recent_tasks = count_tasks_created_since(
+        tasks, date.today() - timedelta(days=6)
+    )
+
+    m1, m2, m3, m4, m5, m6 = st.columns(6)
     m1.metric("Total tasks", total_tasks)
     m2.metric("Tasks finished", finished_tasks)
     m3.metric("Tasks in progress", active_tasks)
     m4.metric("Actions completed", completed_actions)
     m5.metric("Actions remaining", remaining)
+    m6.metric("Created this week", recent_tasks)
 
     st.markdown("### Overall progress")
 
