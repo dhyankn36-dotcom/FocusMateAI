@@ -112,5 +112,56 @@ class HistoryImportValidationTests(unittest.TestCase):
                 )
 
 
+    def test_import_rejects_invalid_task_timestamp_before_writing(self):
+        payload = {
+            "format_version": 1,
+            "tasks": [
+                {
+                    "title": "Task with invalid date",
+                    "actions": ["Review"],
+                    "completed": [],
+                    "finished": False,
+                    "created_at": "not-a-timestamp",
+                }
+            ],
+            "responses": [],
+        }
+
+        with tempfile.TemporaryDirectory() as directory:
+            database_path = Path(directory) / "focusmate.db"
+            self.create_database(database_path)
+
+            with self.assertRaisesRegex(ValueError, "invalid task"):
+                with open_database(database_path) as db:
+                    import_history_json(db, json.dumps(payload))
+
+            with open_database(database_path) as db:
+                self.assertEqual(
+                    db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0],
+                    0,
+                )
+
+    def test_import_rejects_invalid_response_timestamp(self):
+        payload = {
+            "format_version": 1,
+            "tasks": [],
+            "responses": [
+                {
+                    "title": "Response with invalid date",
+                    "content": "Notes",
+                    "created_at": "yesterday",
+                }
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as directory:
+            database_path = Path(directory) / "focusmate.db"
+            self.create_database(database_path)
+
+            with self.assertRaisesRegex(ValueError, "invalid response"):
+                with open_database(database_path) as db:
+                    import_history_json(db, json.dumps(payload))
+
+
 if __name__ == "__main__":
     unittest.main()
