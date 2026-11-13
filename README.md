@@ -1,5 +1,7 @@
 # FocusMate AI
 
+![Tests](https://github.com/dhyankn36-dotcom/FocusMateAI/actions/workflows/tests.yml/badge.svg)
+
 <div align="center">
 
 ### Your AI-powered workspace for planning, focus, and communication
