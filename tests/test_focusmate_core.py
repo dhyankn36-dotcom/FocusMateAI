@@ -22,6 +22,7 @@ from focusmate_core import (
     open_database,
     import_history_json,
     count_response_records,
+    count_tasks_created_since,
     load_response_page,
     paginate_records,
     response_filename,
@@ -1011,6 +1012,48 @@ class ActionStepTests(unittest.TestCase):
             for index in range(1, 15)
         )
         self.assertEqual(len(extract_action_steps(text)), 12)
+
+
+class RecentTaskActivityTests(unittest.TestCase):
+    def test_counts_tasks_created_on_or_after_start_date(self):
+        tasks = [
+            {"created_at": "2026-11-13T09:00:00"},
+            {"created_at": "2026-11-07T23:59:00"},
+            {"created_at": "2026-11-06T12:00:00"},
+        ]
+
+        self.assertEqual(
+            count_tasks_created_since(tasks, date(2026, 11, 7)),
+            2,
+        )
+
+    def test_ignores_records_with_invalid_timestamps(self):
+        tasks = [
+            {"created_at": "not-a-date"},
+            {"created_at": None},
+            {},
+            {"created_at": "2026-11-13T09:00:00"},
+        ]
+
+        self.assertEqual(
+            count_tasks_created_since(tasks, date(2026, 11, 7)),
+            1,
+        )
+
+    def test_accepts_datetime_as_start_date(self):
+        tasks = [{"created_at": "2026-11-13T09:00:00"}]
+
+        self.assertEqual(
+            count_tasks_created_since(
+                tasks,
+                datetime(2026, 11, 13, 8, 30),
+            ),
+            1,
+        )
+
+    def test_rejects_invalid_start_date(self):
+        with self.assertRaisesRegex(ValueError, "Start date"):
+            count_tasks_created_since([], "2026-11-13")
 
 
 if __name__ == "__main__":
