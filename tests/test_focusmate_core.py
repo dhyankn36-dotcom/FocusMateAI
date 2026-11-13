@@ -1058,3 +1058,27 @@ class RecentTaskActivityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HistorySearchRobustnessTests(unittest.TestCase):
+    def test_filter_history_skips_missing_fields_and_non_dict_records(self):
+        records = [
+            {"title": "Project plan", "actions": "Draft requirements"},
+            {"title": "Meeting notes"},
+            {"actions": "Review project progress"},
+            None,
+            {"title": None, "actions": None},
+        ]
+
+        self.assertEqual(
+            filter_history(records, "project", ("title", "actions")),
+            [records[0], records[2]],
+        )
+
+    def test_filter_history_returns_copy_for_blank_query(self):
+        records = [{"title": "Plan"}]
+
+        result = filter_history(records, "  ", ("title",))
+
+        self.assertEqual(result, records)
+        self.assertIsNot(result, records)
