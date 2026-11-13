@@ -29,6 +29,19 @@ class ActionStepParsingTests(unittest.TestCase):
             ],
         )
 
+    def test_strips_markdown_task_checkbox_markers(self):
+        text = (
+            "- [ ] Prepare the project requirements\n"
+            "2. [x] Review the implementation plan"
+        )
+        self.assertEqual(
+            extract_action_steps(text),
+            [
+                "Prepare the project requirements",
+                "Review the implementation plan",
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

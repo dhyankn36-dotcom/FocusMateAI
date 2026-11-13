@@ -575,6 +575,7 @@ def extract_action_steps(text):
             "", line, flags=re.IGNORECASE,
         )
         line = re.sub(r"^[-*•]\s*", "", line)
+        line = re.sub(r"^\[[ xX]\]\s*", "", line)
         line = re.sub(
             r"^step\s+\d+\s*[:\-]\s*",
             "", line, flags=re.IGNORECASE,
