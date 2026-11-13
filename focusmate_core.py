@@ -340,9 +340,9 @@ def filter_history(records, query, fields):
         record
         for record in records
         if any(
-            normalized_query in str(record[field]).casefold()
+            normalized_query in str(record.get(field)).casefold()
             for field in fields
-            if record[field] is not None
+            if isinstance(record, dict) and record.get(field) is not None
         )
     ]
 
