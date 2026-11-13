@@ -33,6 +33,12 @@ def json_dump(value):
 
 def response_filename(title):
     slug = re.sub(r"[^a-z0-9]+", "-", title.casefold()).strip("-")[:80].strip("-")
+    if slug in {
+        "con", "prn", "aux", "nul",
+        *(f"com{number}" for number in range(1, 10)),
+        *(f"lpt{number}" for number in range(1, 10)),
+    }:
+        slug = f"focusmate-{slug}"
     return f"{slug or 'focusmate-response'}.md"
 
 

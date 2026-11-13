@@ -48,6 +48,14 @@ class JsonHelpersTests(unittest.TestCase):
     def test_response_filename_falls_back_when_title_has_no_ascii_slug(self):
         self.assertEqual(response_filename("完成"), "focusmate-response.md")
 
+    def test_response_filename_avoids_windows_reserved_device_names(self):
+        for title in ("CON", "prn", "AUX", "NUL", "COM1", "LPT9"):
+            with self.subTest(title=title):
+                self.assertEqual(
+                    response_filename(title),
+                    f"focusmate-{title.casefold()}.md",
+                )
+
     def test_response_filename_limits_slug_length(self):
         filename = response_filename("a" * 100)
         self.assertEqual(filename, f"{'a' * 80}.md")
