@@ -209,6 +209,16 @@ def build_history_export(tasks, responses):
     )
 
 
+def _is_valid_history_timestamp(value):
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        datetime.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
 def import_history_json(connection, content):
     if isinstance(content, bytes):
         if len(content) > MAX_HISTORY_IMPORT_BYTES:
@@ -264,7 +274,7 @@ def import_history_json(connection, content):
                 for index in completed
             )
             or not isinstance(finished, bool)
-            or not isinstance(created_at, str)
+            or not _is_valid_history_timestamp(created_at)
         ):
             raise ValueError("History contains an invalid task record.")
 
@@ -285,7 +295,7 @@ def import_history_json(connection, content):
             not isinstance(title, str)
             or not title.strip()
             or not isinstance(response_content, str)
-            or not isinstance(created_at, str)
+            or not _is_valid_history_timestamp(created_at)
         ):
             raise ValueError("History contains an invalid response record.")
 
