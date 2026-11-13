@@ -794,6 +794,51 @@ class HistoryImportTests(unittest.TestCase):
                     0,
                 )
 
+    def test_rejects_invalid_timestamps_before_inserting_any_records(self):
+        payload = {
+            "format_version": 1,
+            "tasks": [
+                {
+                    "title": "Plan",
+                    "actions": ["Action"],
+                    "completed": [],
+                    "finished": False,
+                    "created_at": "2026-11-09T10:00:00",
+                }
+            ],
+            "responses": [
+                {
+                    "title": "Notes",
+                    "content": "Saved response",
+                    "created_at": "not-a-timestamp",
+                }
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "focusmate.db"
+            self.create_database(database_path)
+
+            with self.assertRaisesRegex(ValueError, "invalid response"):
+                with open_database(database_path) as db:
+                    import_history_json(db, json_dump(payload))
+
+            payload["responses"][0]["created_at"] = "2026-11-09T10:05:00"
+            payload["tasks"][0]["created_at"] = "not-a-timestamp"
+            with self.assertRaisesRegex(ValueError, "invalid task"):
+                with open_database(database_path) as db:
+                    import_history_json(db, json_dump(payload))
+
+            with open_database(database_path) as db:
+                self.assertEqual(
+                    db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0],
+                    0,
+                )
+                self.assertEqual(
+                    db.execute("SELECT COUNT(*) FROM responses").fetchone()[0],
+                    0,
+                )
+
     def test_response_pages_are_newest_first_and_count_all_records(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "focusmate.db"
