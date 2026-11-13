@@ -494,6 +494,24 @@ def task_stats(tasks):
     )
 
 
+
+def count_tasks_created_since(tasks, start_date):
+    if isinstance(start_date, datetime):
+        start_date = start_date.date()
+    if not isinstance(start_date, date):
+        raise ValueError("Start date must be a date.")
+
+    count = 0
+    for task in tasks:
+        try:
+            created_at = datetime.fromisoformat(task["created_at"]).date()
+        except (KeyError, TypeError, ValueError):
+            continue
+        if created_at >= start_date:
+            count += 1
+    return count
+
+
 def find_resumable_task(tasks):
     for task in tasks:
         actions = json_load(task["actions"])
