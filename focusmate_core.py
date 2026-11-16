@@ -11,6 +11,7 @@ MAX_SIMPLIFY_INPUT_CHARS = 10_000
 MAX_RECIPIENT_CHARS = 120
 MAX_MESSAGE_PURPOSE_CHARS = 3_000
 MAX_HISTORY_IMPORT_BYTES = 5_000_000
+MAX_HISTORY_IMPORT_RECORDS = 1_000
 
 
 def get_ollama_config(environ=None):
@@ -249,6 +250,10 @@ def import_history_json(connection, content):
     responses = payload.get("responses")
     if not isinstance(tasks, list) or not isinstance(responses, list):
         raise ValueError("History file must contain task and response lists.")
+    if len(tasks) + len(responses) > MAX_HISTORY_IMPORT_RECORDS:
+        raise ValueError(
+            "The history file cannot contain more than 1000 records."
+        )
 
     valid_tasks = []
     for task in tasks:
