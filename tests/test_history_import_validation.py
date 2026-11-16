@@ -67,6 +67,40 @@ class HistoryImportValidationTests(unittest.TestCase):
                     0,
                 )
 
+    def test_import_rejects_more_than_1000_combined_records_before_writing(self):
+        payload = {
+            "format_version": 1,
+            "tasks": [
+                {
+                    "title": f"Task {index}",
+                    "actions": [],
+                    "completed": [],
+                    "finished": False,
+                    "created_at": "2026-11-13T10:00:00",
+                }
+                for index in range(1001)
+            ],
+            "responses": [],
+        }
+
+        with tempfile.TemporaryDirectory() as directory:
+            database_path = Path(directory) / "focusmate.db"
+            self.create_database(database_path)
+
+            with self.assertRaisesRegex(ValueError, "more than 1000 records"):
+                with open_database(database_path) as db:
+                    import_history_json(db, json.dumps(payload))
+
+            with open_database(database_path) as db:
+                self.assertEqual(
+                    db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0],
+                    0,
+                )
+                self.assertEqual(
+                    db.execute("SELECT COUNT(*) FROM responses").fetchone()[0],
+                    0,
+                )
+
     def test_reimporting_same_history_does_not_create_duplicates(self):
         payload = {
             "format_version": 1,
