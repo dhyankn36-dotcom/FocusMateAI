@@ -337,6 +337,9 @@ def import_history_json(connection, content):
 
 
 def filter_history(records, query, fields):
+    if not isinstance(query, str):
+        raise TypeError("History search query must be a string.")
+
     normalized_query = query.strip().casefold()
     if not normalized_query:
         return list(records)
@@ -344,10 +347,11 @@ def filter_history(records, query, fields):
     return [
         record
         for record in records
-        if any(
+        if isinstance(record, dict)
+        and any(
             normalized_query in str(record.get(field)).casefold()
             for field in fields
-            if isinstance(record, dict) and record.get(field) is not None
+            if record.get(field) is not None
         )
     ]
 
