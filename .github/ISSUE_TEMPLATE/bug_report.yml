@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a reproducible problem in FocusMateAI
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Please remove personal data, prompts, API keys, and local file paths before sharing logs."
+  - type: dropdown
+    id: app_variant
+    attributes:
+      label: Application variant
+      options:
+        - Local Ollama (app.py)
+        - Hosted Gemini (app_cloud.py)
+        - Both
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: python_version
+    attributes:
+      label: Python version
+      placeholder: "e.g. 3.12.1"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest set of steps that consistently reproduces the issue.
+      placeholder: "1. Start the app...\n2. Open...\n3. Select..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized error output
+      description: Remove credentials, personal information, and private prompts.
+      render: text
+    validations:
+      required: false
