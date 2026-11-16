@@ -274,6 +274,20 @@ class JsonHelpersTests(unittest.TestCase):
         records = [{"title": "First"}, {"title": "Second"}]
         self.assertEqual(filter_history(records, "missing", ("title",)), [])
 
+    def test_filter_history_rejects_non_string_query(self):
+        records = [{"title": "First"}]
+        for query in (None, 42, ["first"]):
+            with self.subTest(query=query):
+                with self.assertRaisesRegex(TypeError, "query must be a string"):
+                    filter_history(records, query, ("title",))
+
+    def test_filter_history_skips_non_dictionary_records(self):
+        records = [{"title": "First"}, None, "not a record", {"title": "Second"}]
+        self.assertEqual(
+            filter_history(records, "first", ("title",)),
+            [{"title": "First"}],
+        )
+
     def test_filter_records_by_date_includes_both_boundary_days(self):
         records = [
             {"id": 1, "created_at": "2026-11-08T23:59:59"},
